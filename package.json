@@ -10,7 +10,9 @@
   "homepage": "https://github.com/resend/resend-cli#readme",
   "keywords": ["cli", "resend", "email", "api"],
   "type": "module",
-  "bin": { "resend": "./src/cli.ts" },
+  "bin": {
+    "resend": "./src/cli.ts"
+  },
   "scripts": {
     "dev": "bun run src/cli.ts",
     "dev:watch": "bun --watch src/cli.ts",
@@ -24,7 +26,7 @@
     "unicode-animations": "latest"
   },
   "devDependencies": {
-    "typescript": "^5.5.0",
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "typescript": "^5.5.0"
   }
 }
