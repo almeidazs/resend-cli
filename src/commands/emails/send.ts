@@ -1,6 +1,7 @@
 import { Command } from '@commander-js/extra-typings';
 import { readFileSync } from 'node:fs';
 import type { Resend } from 'resend';
+import type { GlobalOpts } from '../../lib/client';
 import { requireClient } from '../../lib/client';
 import { promptForMissing, cancelAndExit } from '../../lib/prompts';
 import { createSpinner } from '../../lib/spinner';
@@ -90,7 +91,7 @@ Examples:
   $ resend emails send --from you@domain.com --to user@example.com --subject "Hi" --html-file ./email.html --json
   $ RESEND_API_KEY=re_123 resend emails send --from you@domain.com --to user@example.com --subject "Hi" --text "Hi"`)
   .action(async (opts, cmd) => {
-    const globalOpts = cmd.optsWithGlobals() as { apiKey?: string; json?: boolean };
+    const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
 
     const resend = requireClient(globalOpts);
 

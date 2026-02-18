@@ -1,5 +1,6 @@
 import { Command, Option } from '@commander-js/extra-typings';
 import type { UpdateDomainsOptions } from 'resend';
+import type { GlobalOpts } from '../../lib/client';
 import { requireClient } from '../../lib/client';
 import { createSpinner } from '../../lib/spinner';
 import { outputError, outputResult, errorMessage } from '../../lib/output';
@@ -34,7 +35,7 @@ Examples:
   $ resend domains update <id> --no-open-tracking --json`
   )
   .action(async (id, opts, cmd) => {
-    const globalOpts = cmd.optsWithGlobals() as { apiKey?: string; json?: boolean };
+    const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
 
     const resend = requireClient(globalOpts);
 

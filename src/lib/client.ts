@@ -2,6 +2,8 @@ import { Resend } from 'resend';
 import { resolveApiKey } from './config';
 import { errorMessage, outputError } from './output';
 
+export type GlobalOpts = { apiKey?: string; json?: boolean };
+
 export function createClient(flagValue?: string): Resend {
   const resolved = resolveApiKey(flagValue);
   if (!resolved) {
@@ -12,7 +14,7 @@ export function createClient(flagValue?: string): Resend {
   return new Resend(resolved.key);
 }
 
-export function requireClient(opts: { apiKey?: string; json?: boolean }): Resend {
+export function requireClient(opts: GlobalOpts): Resend {
   try {
     return createClient(opts.apiKey);
   } catch (err) {

@@ -3,6 +3,7 @@ import { execFile } from 'node:child_process';
 import * as p from '@clack/prompts';
 import { cancelAndExit } from '../../lib/prompts';
 import { Resend } from 'resend';
+import type { GlobalOpts } from '../../lib/client';
 import { resolveApiKey, storeApiKey } from '../../lib/config';
 import { createSpinner } from '../../lib/spinner';
 import { outputError, outputResult, errorMessage } from '../../lib/output';
@@ -46,7 +47,7 @@ Examples:
   $ resend auth login                      (interactive — prompts and opens browser)
   $ RESEND_API_KEY=re_123 resend emails send ...  (skip login; use env var directly)`)
   .action(async (opts, cmd) => {
-    const globalOpts = cmd.optsWithGlobals() as { json?: boolean };
+    const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
     let apiKey = opts.key;
 
     if (!apiKey) {

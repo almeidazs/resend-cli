@@ -1,4 +1,5 @@
 import { Command } from '@commander-js/extra-typings';
+import type { GlobalOpts } from '../../lib/client';
 import { requireClient } from '../../lib/client';
 import { createSpinner } from '../../lib/spinner';
 import { outputError, outputResult, errorMessage } from '../../lib/output';
@@ -31,7 +32,7 @@ Examples:
   $ resend domains list --after <cursor> --json`
   )
   .action(async (opts, cmd) => {
-    const globalOpts = cmd.optsWithGlobals() as { apiKey?: string; json?: boolean };
+    const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
 
     const resend = requireClient(globalOpts);
 

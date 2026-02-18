@@ -1,5 +1,6 @@
 import { Command, Option } from '@commander-js/extra-typings';
 import * as p from '@clack/prompts';
+import type { GlobalOpts } from '../../lib/client';
 import { requireClient } from '../../lib/client';
 import { cancelAndExit } from '../../lib/prompts';
 import { createSpinner } from '../../lib/spinner';
@@ -49,7 +50,7 @@ Examples:
   $ resend domains create --name example.com --sending --receiving --json`
   )
   .action(async (opts, cmd) => {
-    const globalOpts = cmd.optsWithGlobals() as { apiKey?: string; json?: boolean };
+    const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
 
     const resend = requireClient(globalOpts);
 

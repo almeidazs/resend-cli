@@ -5,6 +5,7 @@ import { homedir } from 'node:os';
 import { Resend } from 'resend';
 import { resolveApiKey } from '../lib/config';
 import { createSpinner } from '../lib/spinner';
+import type { GlobalOpts } from '../lib/client';
 import { outputResult, errorMessage } from '../lib/output';
 import { isInteractive } from '../lib/tty';
 import { VERSION, PACKAGE_NAME } from '../lib/version';
@@ -199,7 +200,7 @@ Examples:
   $ resend doctor
   $ resend doctor --json`)
   .action(async (_opts, cmd) => {
-    const globalOpts = cmd.optsWithGlobals() as { json?: boolean };
+    const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
     const checks: CheckResult[] = [];
     const interactive = isInteractive() && !globalOpts.json;
 

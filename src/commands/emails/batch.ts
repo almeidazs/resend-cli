@@ -1,6 +1,8 @@
 import { Command } from '@commander-js/extra-typings';
 import { readFileSync } from 'node:fs';
-import { createClient } from '../../lib/client';
+import type { CreateBatchOptions } from 'resend';
+import type { GlobalOpts } from '../../lib/client';
+import { requireClient } from '../../lib/client';
 import { cancelAndExit } from '../../lib/prompts';
 import { createSpinner } from '../../lib/spinner';
 import { outputError, outputResult, errorMessage } from '../../lib/output';
@@ -40,17 +42,9 @@ Examples:
   $ resend emails batch --file ./emails.json --idempotency-key my-batch-2026-02-18
   $ RESEND_API_KEY=re_123 resend emails batch --file ./emails.json --json`)
   .action(async (opts, cmd) => {
-    const globalOpts = cmd.optsWithGlobals() as { apiKey?: string; json?: boolean };
+    const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
 
-    let resend;
-    try {
-      resend = createClient(globalOpts.apiKey);
-    } catch (err) {
-      outputError(
-        { message: errorMessage(err, 'Failed to create client'), code: 'auth_error' },
-        { json: globalOpts.json }
-      );
-    }
+    const resend = requireClient(globalOpts);
 
     let filePath = opts.file;
 
@@ -128,7 +122,7 @@ Examples:
       // but has no effect until SDK support is added.
       const sendOpts: Record<string, unknown> = {};
       if (opts.idempotencyKey) sendOpts.idempotencyKey = opts.idempotencyKey;
-      const { data, error } = await resend!.batch.send(emails as any, sendOpts as any);
+      const { data, error } = await resend.batch.send(emails as CreateBatchOptions, sendOpts as any);
 
       if (error) {
         spinner.fail('Failed to send batch');
