@@ -10,11 +10,16 @@ const mockSend = mock(async () => ({
   error: null,
 }));
 
+const mockDomainsList = mock(async () => ({
+  data: { data: [] },
+  error: null,
+}));
+
 mock.module('resend', () => ({
   Resend: class MockResend {
     constructor(public key: string) {}
     emails = { send: mockSend };
-    domains = { list: mock(async () => ({ data: { data: [] }, error: null })) };
+    domains = { list: mockDomainsList };
   },
 }));
 
@@ -41,6 +46,7 @@ describe('send command', () => {
   beforeEach(() => {
     process.env.RESEND_API_KEY = 're_test_key';
     mockSend.mockClear();
+    mockDomainsList.mockClear();
   });
 
   afterEach(() => {
@@ -216,5 +222,31 @@ describe('send command', () => {
     expect(callArgs.cc).toEqual(['cc@test.com']);
     expect(callArgs.bcc).toEqual(['bcc@test.com']);
     expect(callArgs.replyTo).toBe('reply@test.com');
+  });
+
+  test('does not call domains.list when --from is provided', async () => {
+    setNonInteractive();
+    logSpy = spyOn(console, 'log').mockImplementation(() => {});
+    stderrSpy = spyOn(process.stderr, 'write').mockImplementation(() => true);
+
+    const { sendCommand } = await import('../../../src/commands/emails/send');
+    await sendCommand.parseAsync(
+      ['--from', 'a@test.com', '--to', 'b@test.com', '--subject', 'Test', '--text', 'Hello'],
+      { from: 'user' }
+    );
+
+    expect(mockDomainsList).not.toHaveBeenCalled();
+    expect(mockSend).toHaveBeenCalledTimes(1);
+  });
+
+  test('degrades gracefully when domain fetch fails', async () => {
+    const { fetchVerifiedDomains } = await import('../../../src/commands/emails/send');
+    const failingResend = {
+      domains: { list: mock(async () => { throw new Error('Network error'); }) },
+    } as any;
+
+    // Should return [] without throwing, so the caller falls through to promptForMissing
+    const result = await fetchVerifiedDomains(failingResend);
+    expect(result).toEqual([]);
   });
 });

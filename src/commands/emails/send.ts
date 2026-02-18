@@ -1,11 +1,64 @@
 import { Command } from '@commander-js/extra-typings';
 import { readFileSync } from 'node:fs';
+import type { Resend } from 'resend';
 import { createClient } from '../../lib/client';
 import { promptForMissing } from '../../lib/prompts';
 import { createSpinner } from '../../lib/spinner';
 import { outputError, outputResult } from '../../lib/output';
 import { isInteractive } from '../../lib/tty';
 import * as p from '@clack/prompts';
+
+export async function fetchVerifiedDomains(resend: Resend): Promise<string[]> {
+  try {
+    const { data, error } = await resend.domains.list();
+    if (error || !data) return [];
+    return data.data
+      .filter((d) => d.status === 'verified' && d.capabilities.sending === 'enabled')
+      .map((d) => d.name);
+  } catch {
+    return [];
+  }
+}
+
+const FROM_PREFIXES = ['noreply', 'hello', 'hi', 'info', 'support', 'team'];
+
+async function promptForFromAddress(domains: string[]): Promise<string> {
+  let domain: string;
+  if (domains.length === 1) {
+    domain = domains[0];
+  } else {
+    const result = await p.select({
+      message: 'Select a verified domain',
+      options: domains.map((d) => ({ value: d, label: d })),
+    });
+    if (p.isCancel(result)) { p.cancel('Send cancelled.'); process.exit(0); }
+    domain = result;
+  }
+
+  const options: Array<{ value: string | null; label: string }> = FROM_PREFIXES.map((prefix) => ({
+    value: `${prefix}@${domain}`,
+    label: `${prefix}@${domain}`,
+  }));
+  options.push({ value: null, label: 'Custom address...' });
+
+  const result = await p.select({
+    message: `From address (@${domain})`,
+    options,
+  });
+  if (p.isCancel(result)) { p.cancel('Send cancelled.'); process.exit(0); }
+
+  if (result === null) {
+    const custom = await p.text({
+      message: 'From address',
+      placeholder: `you@${domain}`,
+      validate: (v) => (!v || !v.includes('@') ? 'Enter a valid email address' : undefined),
+    });
+    if (p.isCancel(custom)) { p.cancel('Send cancelled.'); process.exit(0); }
+    return custom;
+  }
+
+  return result;
+}
 
 export const sendCommand = new Command('send')
   .description('Send an email')
@@ -32,8 +85,18 @@ export const sendCommand = new Command('send')
       return; // unreachable, but TypeScript can't prove outputError exits inside catch
     }
 
+    // Only fetch verified domains in interactive mode — non-interactive
+    // callers (CI, agents, scripts) must pass --from explicitly.
+    let fromAddress = opts.from;
+    if (!fromAddress && isInteractive()) {
+      const domains = await fetchVerifiedDomains(resend);
+      if (domains.length > 0) {
+        fromAddress = await promptForFromAddress(domains);
+      }
+    }
+
     const filled = await promptForMissing(
-      { from: opts.from, to: opts.to?.[0], subject: opts.subject },
+      { from: fromAddress, to: opts.to?.[0], subject: opts.subject },
       [
         { flag: 'from', message: 'From address', placeholder: 'you@example.com' },
         { flag: 'to', message: 'To address', placeholder: 'recipient@example.com' },
