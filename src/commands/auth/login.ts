@@ -1,10 +1,11 @@
 import { Command } from '@commander-js/extra-typings';
 import { execFile } from 'node:child_process';
 import * as p from '@clack/prompts';
+import { cancelAndExit } from '../../lib/prompts';
 import { Resend } from 'resend';
 import { resolveApiKey, storeApiKey } from '../../lib/config';
 import { createSpinner } from '../../lib/spinner';
-import { outputError, outputResult } from '../../lib/output';
+import { outputError, outputResult, errorMessage } from '../../lib/output';
 import { isInteractive } from '../../lib/tty';
 
 const RESEND_API_KEYS_URL = 'https://resend.com/api-keys';
@@ -20,8 +21,30 @@ function openInBrowser(url: string): Promise<boolean> {
 }
 
 export const loginCommand = new Command('login')
-  .description('Authenticate with your Resend API key')
-  .option('--key <key>', 'API key (required in non-interactive mode)')
+  .description('Save a Resend API key to the local credentials file')
+  .option('--key <key>', 'API key to store (required in non-interactive mode)')
+  .addHelpText('after', `
+Non-interactive: --key is required (no prompts will appear when stdin/stdout is not a TTY)
+
+Alternative: Set RESEND_API_KEY environment variable — no login needed.
+Credentials stored at: ~/.config/resend/credentials.json
+  (Linux: $XDG_CONFIG_HOME/resend/credentials.json)
+  (Windows: %APPDATA%\\resend\\credentials.json)
+
+Global options (defined on root):
+  --json  Force JSON output
+
+Output (--json):
+  {"success":true,"config_path":"<path>"}
+
+Errors (exit code 1):
+  {"error":{"message":"<message>","code":"<code>"}}
+  Codes: missing_key | invalid_key_format | validation_failed
+
+Examples:
+  $ resend auth login --key re_123456789
+  $ resend auth login                      (interactive — prompts and opens browser)
+  $ RESEND_API_KEY=re_123 resend emails send ...  (skip login; use env var directly)`)
   .action(async (opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as { json?: boolean };
     let apiKey = opts.key;
@@ -44,10 +67,7 @@ export const loginCommand = new Command('login')
           message: 'No API key found. Open Resend dashboard to create one?',
         });
 
-        if (p.isCancel(shouldOpen)) {
-          p.cancel('Login cancelled.');
-          process.exit(0);
-        }
+        if (p.isCancel(shouldOpen)) cancelAndExit('Login cancelled.');
 
         if (shouldOpen) {
           const opened = await openInBrowser(RESEND_API_KEYS_URL);
@@ -68,10 +88,7 @@ export const loginCommand = new Command('login')
         },
       });
 
-      if (p.isCancel(result)) {
-        p.cancel('Login cancelled.');
-        process.exit(0);
-      }
+      if (p.isCancel(result)) cancelAndExit('Login cancelled.');
 
       apiKey = result;
     }
@@ -81,7 +98,6 @@ export const loginCommand = new Command('login')
         { message: 'Invalid API key format. Key must start with re_', code: 'invalid_key_format' },
         { json: globalOpts.json }
       );
-      return;
     }
 
     const spinner = createSpinner('Validating API key...', 'braille');
@@ -93,10 +109,9 @@ export const loginCommand = new Command('login')
     } catch (err) {
       spinner.fail('API key validation failed');
       outputError(
-        { message: err instanceof Error ? err.message : 'Failed to validate API key', code: 'validation_failed' },
+        { message: errorMessage(err, 'Failed to validate API key'), code: 'validation_failed' },
         { json: globalOpts.json }
       );
-      return;
     }
 
     const configPath = storeApiKey(apiKey);
