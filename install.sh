@@ -1,17 +1,29 @@
 #!/usr/bin/env bash
 # Resend CLI installer
-# Usage:  curl -fsSL https://resend.com/install.sh | bash
-#    or:  curl -fsSL https://resend.com/install.sh | bash -s v0.2.0
+#
+# Usage:
+#   curl -fsSL https://resend.com/install.sh | bash
+#   curl -fsSL https://resend.com/install.sh | bash -s v0.1.0
+#
+# Environment variables:
+#   RESEND_INSTALL  - Custom install directory (default: ~/.resend)
+#   GITHUB_BASE     - Custom GitHub base URL (default: https://github.com)
+
+# Wrap everything in a function to protect against partial download.
+# If the connection drops mid-transfer, bash won't execute a truncated script.
+main() {
+
 set -euo pipefail
 
 # ─── Colors (only when outputting to a terminal) ─────────────────────────────
 
-Color_Off='' Red='' Green='' Dim='' Bold='' Blue=''
+Color_Off='' Red='' Green='' Dim='' Bold='' Blue='' Yellow=''
 
 if [[ -t 1 ]]; then
   Color_Off='\033[0m'
   Red='\033[0;31m'
   Green='\033[0;32m'
+  Yellow='\033[0;33m'
   Dim='\033[0;2m'
   Bold='\033[1m'
   Blue='\033[0;34m'
@@ -22,6 +34,10 @@ fi
 error() {
   printf "%b\n" "${Red}error${Color_Off}: $*" >&2
   exit 1
+}
+
+warn() {
+  printf "%b\n" "${Yellow}warn${Color_Off}: $*" >&2
 }
 
 info() {
@@ -44,12 +60,12 @@ tildify() {
   fi
 }
 
-# ─── Dependency checks ───────────────────────────────────────────────────────
+# ─── Dependency checks ──────────────────────────────────────────────────────
 
 command -v curl >/dev/null 2>&1 || error "curl is required but not found. Install it and try again."
 command -v tar  >/dev/null 2>&1 || error "tar is required but not found. Install it and try again."
 
-# ─── OS / Architecture detection ─────────────────────────────────────────────
+# ─── OS / Architecture detection ────────────────────────────────────────────
 
 platform=$(uname -ms)
 
@@ -60,7 +76,14 @@ case $platform in
   'Linux arm64')     target=linux-arm64 ;;
   'Linux x86_64')    target=linux-x64 ;;
   *)
-    error "Unsupported platform: ${platform}. Resend CLI supports macOS (x64/arm64) and Linux (x64/arm64)."
+    error "Unsupported platform: ${platform}.
+
+  Resend CLI supports:
+    - macOS (Apple Silicon / Intel)
+    - Linux (x64 / arm64)
+
+  For Windows, run this in PowerShell:
+    irm https://resend.com/install.ps1 | iex"
     ;;
 esac
 
@@ -68,25 +91,51 @@ esac
 if [[ $target == "darwin-x64" ]]; then
   if [[ $(sysctl -n sysctl.proc_translated 2>/dev/null || echo 0) == "1" ]]; then
     target=darwin-arm64
-    info "Rosetta 2 detected — installing native arm64 binary"
+    info "  Rosetta 2 detected — installing native arm64 binary"
   fi
 fi
 
-# ─── Version + Download URL ──────────────────────────────────────────────────
+# Detect musl (Alpine Linux) — glibc binaries won't work
+if [[ $target == linux-* ]]; then
+  if ldd --version 2>&1 | grep -qi musl 2>/dev/null; then
+    error "Alpine Linux (musl) is not currently supported.
+
+  The compiled binary requires glibc. Use one of these alternatives:
+    - npm install -g @resend/cli  (requires Bun)
+    - Run in a glibc-based container (e.g., ubuntu, debian)"
+  fi
+fi
+
+# ─── Version + Download URL ─────────────────────────────────────────────────
 
 GITHUB_BASE=${GITHUB_BASE:-"https://github.com"}
+
+# Validate GITHUB_BASE is HTTPS to prevent download from arbitrary sources
+case "$GITHUB_BASE" in
+  https://*) ;;
+  *) error "GITHUB_BASE must start with https:// (got: ${GITHUB_BASE})" ;;
+esac
+
 REPO="${GITHUB_BASE}/resend/resend-cli"
+
 VERSION=${1:-}
 
+# Validate version format if provided
 if [[ -n $VERSION ]]; then
   # Strip leading 'v' if present, then re-add for the tag
   VERSION="${VERSION#v}"
+  if ! [[ $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+    error "Invalid version format: ${VERSION}
+
+  Expected: semantic version like 0.1.0 or 1.2.3-beta.1
+  Usage:    curl -fsSL https://resend.com/install.sh | bash -s v0.1.0"
+  fi
   url="${REPO}/releases/download/v${VERSION}/resend-${target}.tar.gz"
 else
   url="${REPO}/releases/latest/download/resend-${target}.tar.gz"
 fi
 
-# ─── Install directory ───────────────────────────────────────────────────────
+# ─── Install directory ──────────────────────────────────────────────────────
 
 install_dir="${RESEND_INSTALL:-$HOME/.resend}"
 bin_dir="${install_dir}/bin"
@@ -94,36 +143,52 @@ exe="${bin_dir}/resend"
 
 mkdir -p "$bin_dir" || error "Failed to create install directory: ${bin_dir}"
 
-# ─── Download + Extract ──────────────────────────────────────────────────────
+# ─── Download + Extract ─────────────────────────────────────────────────────
 
-bold "Installing Resend CLI..."
+echo ""
+bold "  Installing Resend CLI..."
 echo ""
 
-tmpfile=$(mktemp) || error "Failed to create temporary file"
-trap 'rm -f "$tmpfile"' EXIT INT TERM
+tmpdir=$(mktemp -d) || error "Failed to create temporary directory"
+trap 'rm -rf "$tmpdir"' EXIT INT TERM
+
+tmpfile="${tmpdir}/resend.tar.gz"
 
 info "  Downloading from ${url}"
 echo ""
 
 curl --fail --location --progress-bar --output "$tmpfile" "$url" ||
-  error "Download failed. Check your internet connection and try again.
-       If you specified a version, make sure it exists: ${url}"
+  error "Download failed.
 
-tar -xzf "$tmpfile" -C "$bin_dir" 2>/dev/null ||
+  Possible causes:
+    - No internet connection
+    - The version does not exist: ${VERSION:-latest}
+    - GitHub is unreachable
+
+  URL: ${url}"
+
+tar -xzf "$tmpfile" -C "$bin_dir" ||
   error "Failed to extract archive. The download may be corrupted — try again."
 
 chmod +x "$exe" || error "Failed to make binary executable"
 
-# ─── Verify installation ─────────────────────────────────────────────────────
+# Strip macOS Gatekeeper quarantine flag (set automatically on curl downloads)
+# Without this, macOS will block the binary: "cannot be opened because Apple
+# cannot check it for malicious software"
+if [[ $(uname -s) == "Darwin" ]]; then
+  xattr -d com.apple.quarantine "$exe" 2>/dev/null || true
+fi
+
+# ─── Verify installation ────────────────────────────────────────────────────
 
 installed_version=$("$exe" --version 2>/dev/null || echo "unknown")
 
 echo ""
-success "  Resend CLI v${installed_version} installed successfully!"
+success "  Resend CLI ${installed_version} installed successfully!"
 echo ""
 info "  Binary:  $(tildify "$exe")"
 
-# ─── PATH setup ──────────────────────────────────────────────────────────────
+# ─── PATH setup ─────────────────────────────────────────────────────────────
 
 # Check if already on PATH
 if command -v resend >/dev/null 2>&1; then
@@ -134,7 +199,7 @@ if command -v resend >/dev/null 2>&1; then
     echo ""
     exit 0
   else
-    info "  Note: another 'resend' was found at ${existing}"
+    warn "another 'resend' was found at ${existing}"
     info "  The new installation at $(tildify "$exe") may be shadowed."
   fi
 fi
@@ -158,12 +223,24 @@ case $shell_name in
     shell_line="export PATH=\"$(tildify "$bin_dir"):\$PATH\""
     ;;
   bash)
-    if [[ -f "$HOME/.bashrc" ]]; then
-      config="$HOME/.bashrc"
-    elif [[ -f "$HOME/.bash_profile" ]]; then
-      config="$HOME/.bash_profile"
+    # macOS bash opens login shells — .bash_profile is loaded, not .bashrc.
+    # Linux bash opens non-login interactive shells — .bashrc is preferred.
+    if [[ $(uname -s) == "Darwin" ]]; then
+      if [[ -f "$HOME/.bash_profile" ]]; then
+        config="$HOME/.bash_profile"
+      elif [[ -f "$HOME/.bashrc" ]]; then
+        config="$HOME/.bashrc"
+      else
+        config="$HOME/.bash_profile"
+      fi
     else
-      config="$HOME/.bashrc"
+      if [[ -f "$HOME/.bashrc" ]]; then
+        config="$HOME/.bashrc"
+      elif [[ -f "$HOME/.bash_profile" ]]; then
+        config="$HOME/.bash_profile"
+      else
+        config="$HOME/.bashrc"
+      fi
     fi
     shell_line="export PATH=\"$(tildify "$bin_dir"):\$PATH\""
     ;;
@@ -174,7 +251,7 @@ case $shell_name in
 esac
 
 if [[ -n $config ]]; then
-  # Check if PATH entry already exists in config (check both tildified and absolute)
+  # Check if PATH entry already exists (check both tildified and absolute)
   if [[ -f "$config" ]] && (grep -qF "$(tildify "$bin_dir")" "$config" 2>/dev/null || grep -qF "$bin_dir" "$config" 2>/dev/null); then
     info "  PATH already configured in $(tildify "$config")"
   elif [[ -w "${config%/*}" ]] || [[ -w "$config" ]]; then
@@ -203,3 +280,9 @@ else
 fi
 
 echo ""
+
+}
+
+# Run the installer — this line MUST be the last line in the file.
+# If the download is interrupted, bash will not execute an incomplete function.
+main "$@"
