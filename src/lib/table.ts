@@ -1,4 +1,5 @@
-export function renderTable(headers: string[], rows: string[][]): string {
+export function renderTable(headers: string[], rows: string[][], emptyMessage = '(no results)'): string {
+  if (rows.length === 0) return emptyMessage;
   const widths = headers.map((h, i) => Math.max(h.length, ...rows.map((r) => r[i].length)));
   const top = '┌' + widths.map((w) => '─'.repeat(w + 2)).join('┬') + '┐';
   const mid = '├' + widths.map((w) => '─'.repeat(w + 2)).join('┼') + '┤';
