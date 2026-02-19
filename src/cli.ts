@@ -8,6 +8,7 @@ import { broadcastsCommand } from './commands/broadcasts/index';
 import { contactsCommand } from './commands/contacts/index';
 import { contactPropertiesCommand } from './commands/contact-properties/index';
 import { segmentsCommand } from './commands/segments/index';
+import { audiencesCommand } from './commands/audiences/index';
 import { doctorCommand } from './commands/doctor';
 import { VERSION } from './lib/version';
 
@@ -40,6 +41,7 @@ Examples:
   .addCommand(contactsCommand)
   .addCommand(contactPropertiesCommand)
   .addCommand(segmentsCommand)
+  .addCommand(audiencesCommand)
   .addCommand(doctorCommand);
 
 program.parse();
