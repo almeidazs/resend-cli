@@ -40,7 +40,7 @@ Examples:
       await confirmDelete(id, `Delete contact ${id}? This cannot be undone.`, globalOpts);
     }
 
-    const spinner = createSpinner('Deleting contact...', 'braille');
+    const spinner = createSpinner('Deleting contact...');
 
     try {
       const { error } = await resend.contacts.remove(id);
