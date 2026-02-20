@@ -63,13 +63,14 @@ describe('setupCursor', () => {
     const errorSpy = spyOn(console, 'error').mockImplementation(() => {});
     const exitSpy = mockExitThrow();
 
-    const { setupCursor } = await import('../../../src/commands/setup/cursor');
-    await expectExit1(() => setupCursor({ json: true }));
-
-    const output = errorSpy.mock.calls.map((c) => c[0]).join(' ');
-    expect(output).toContain('config_write_error');
-
-    errorSpy.mockRestore();
-    exitSpy.mockRestore();
+    try {
+      const { setupCursor } = await import('../../../src/commands/setup/cursor');
+      await expectExit1(() => setupCursor({ json: true }));
+      const output = errorSpy.mock.calls.map((c) => c[0]).join(' ');
+      expect(output).toContain('config_write_error');
+    } finally {
+      errorSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
   });
 });
