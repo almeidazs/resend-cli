@@ -7,39 +7,28 @@ import { createSpinner } from '../../lib/spinner';
 import { outputError, outputResult, errorMessage } from '../../lib/output';
 import { readFile } from '../../lib/files';
 import { isInteractive } from '../../lib/tty';
+import { buildHelpText } from '../../lib/help-text';
 import * as p from '@clack/prompts';
 
 export const batchCommand = new Command('batch')
   .description('Send up to 100 emails in a single API request from a JSON file')
   .option('--file <path>', 'Path to a JSON file containing an array of email objects (required in non-interactive mode)')
   .option('--idempotency-key <key>', 'Deduplicate this batch request using this key')
-  .addHelpText('after', `
-Required: --file (in non-interactive / piped mode)
-Limit: 100 emails per request (API hard limit — warned if exceeded)
-Unsupported per-email fields: attachments, scheduled_at
-
-File format (--file path):
-  [
-    {"from":"you@domain.com","to":["user@example.com"],"subject":"Hello","text":"Hi"},
-    {"from":"you@domain.com","to":["other@example.com"],"subject":"Hello","html":"<b>Hi</b>"}
-  ]
-
-Global options (defined on root):
-  --api-key <key>  API key (or set RESEND_API_KEY env var)
-  --json           Force JSON output (also auto-enabled when stdout is piped)
-
-Output (--json or piped):
-  [{"id":"<email-id>"},{"id":"<email-id>"}]
-
-Errors (exit code 1):
-  {"error":{"message":"<message>","code":"<code>"}}
-  Codes: auth_error | missing_file | file_read_error | invalid_json | invalid_format | batch_error
-
-Examples:
-  $ resend emails batch --file ./emails.json
-  $ resend emails batch --file ./emails.json --json
-  $ resend emails batch --file ./emails.json --idempotency-key my-batch-2026-02-18
-  $ RESEND_API_KEY=re_123 resend emails batch --file ./emails.json --json`)
+  .addHelpText(
+    'after',
+    buildHelpText({
+      context:
+        'Non-interactive: --file\nLimit: 100 emails per request (API hard limit — warned if exceeded)\nUnsupported per-email fields: attachments, scheduled_at\n\nFile format (--file path):\n  [\n    {"from":"you@domain.com","to":["user@example.com"],"subject":"Hello","text":"Hi"},\n    {"from":"you@domain.com","to":["other@example.com"],"subject":"Hello","html":"<b>Hi</b>"}\n  ]',
+      output: '  [{"id":"<email-id>"},{"id":"<email-id>"}]',
+      errorCodes: ['auth_error', 'missing_file', 'file_read_error', 'invalid_json', 'invalid_format', 'batch_error'],
+      examples: [
+        'resend emails batch --file ./emails.json',
+        'resend emails batch --file ./emails.json --json',
+        'resend emails batch --file ./emails.json --idempotency-key my-batch-2026-02-18',
+        'RESEND_API_KEY=re_123 resend emails batch --file ./emails.json --json',
+      ],
+    })
+  )
   .action(async (opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
 

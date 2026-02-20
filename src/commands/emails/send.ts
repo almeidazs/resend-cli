@@ -7,6 +7,7 @@ import { createSpinner } from '../../lib/spinner';
 import { outputError, outputResult, errorMessage } from '../../lib/output';
 import { readFile } from '../../lib/files';
 import { isInteractive } from '../../lib/tty';
+import { buildHelpText } from '../../lib/help-text';
 import * as p from '@clack/prompts';
 
 export async function fetchVerifiedDomains(resend: Resend): Promise<string[]> {
@@ -72,24 +73,20 @@ export const sendCommand = new Command('send')
   .option('--cc <addresses...>', 'CC recipients')
   .option('--bcc <addresses...>', 'BCC recipients')
   .option('--reply-to <address>', 'Reply-to address')
-  .addHelpText('after', `
-Required: --from, --to, --subject, and one of --text | --html | --html-file
-
-Global options (defined on root):
-  --api-key <key>  API key (or set RESEND_API_KEY env var)
-  --json           Force JSON output (also auto-enabled when stdout is piped)
-
-Output (--json or piped):
-  {"id":"<email-id>"}
-
-Errors (exit code 1):
-  {"error":{"message":"<message>","code":"<code>"}}
-
-Examples:
-  $ resend emails send --from you@domain.com --to user@example.com --subject "Hello" --text "Hi"
-  $ resend emails send --from you@domain.com --to a@example.com --to b@example.com --subject "Hi" --html "<b>Hi</b>" --json
-  $ resend emails send --from you@domain.com --to user@example.com --subject "Hi" --html-file ./email.html --json
-  $ RESEND_API_KEY=re_123 resend emails send --from you@domain.com --to user@example.com --subject "Hi" --text "Hi"`)
+  .addHelpText(
+    'after',
+    buildHelpText({
+      context: 'Required: --from, --to, --subject, and one of --text | --html | --html-file',
+      output: '  {"id":"<email-id>"}',
+      errorCodes: ['auth_error', 'missing_body', 'send_error'],
+      examples: [
+        'resend emails send --from you@domain.com --to user@example.com --subject "Hello" --text "Hi"',
+        'resend emails send --from you@domain.com --to a@example.com --to b@example.com --subject "Hi" --html "<b>Hi</b>" --json',
+        'resend emails send --from you@domain.com --to user@example.com --subject "Hi" --html-file ./email.html --json',
+        'RESEND_API_KEY=re_123 resend emails send --from you@domain.com --to user@example.com --subject "Hi" --text "Hi"',
+      ],
+    })
+  )
   .action(async (opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
 

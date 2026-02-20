@@ -4,6 +4,7 @@ import { requireClient } from '../../../lib/client';
 import { createSpinner } from '../../../lib/spinner';
 import { outputError, outputResult, errorMessage } from '../../../lib/output';
 import { isInteractive } from '../../../lib/tty';
+import { buildHelpText } from '../../../lib/help-text';
 
 export const getAttachmentCommand = new Command('attachment')
   .description('Retrieve a single attachment from a received (inbound) email')
@@ -11,24 +12,17 @@ export const getAttachmentCommand = new Command('attachment')
   .argument('<attachmentId>', 'Attachment UUID')
   .addHelpText(
     'after',
-    `
-The download_url is a signed URL that expires in ~1 hour. Download the file directly:
-  resend emails receiving attachment <emailId> <attachmentId> --json | jq -r .download_url | xargs curl -O
-
-Global options (defined on root):
-  --api-key <key>  API key (or set RESEND_API_KEY env var)
-  --json           Force JSON output (also auto-enabled when stdout is piped)
-
-Output (--json or piped):
-  {"object":"attachment","id":"<uuid>","filename":"invoice.pdf","size":51200,"content_type":"application/pdf","content_disposition":"attachment","content_id":null,"download_url":"<signed-url>","expires_at":"<iso-date>"}
-
-Errors (exit code 1):
-  {"error":{"message":"<message>","code":"<code>"}}
-  Codes: auth_error | fetch_error
-
-Examples:
-  $ resend emails receiving attachment <email-id> <attachment-id>
-  $ resend emails receiving attachment <email-id> <attachment-id> --json`
+    buildHelpText({
+      context:
+        'The download_url is a signed URL that expires in ~1 hour. Download the file directly:\n  resend emails receiving attachment <emailId> <attachmentId> --json | jq -r .download_url | xargs curl -O',
+      output:
+        '  {"object":"attachment","id":"<uuid>","filename":"invoice.pdf","size":51200,"content_type":"application/pdf","content_disposition":"attachment","content_id":null,"download_url":"<signed-url>","expires_at":"<iso-date>"}',
+      errorCodes: ['auth_error', 'fetch_error'],
+      examples: [
+        'resend emails receiving attachment <email-id> <attachment-id>',
+        'resend emails receiving attachment <email-id> <attachment-id> --json',
+      ],
+    })
   )
   .action(async (emailId, attachmentId, _opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
