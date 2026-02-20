@@ -7,6 +7,7 @@ import { cancelAndExit } from '../../lib/prompts';
 import { createSpinner } from '../../lib/spinner';
 import { outputError, outputResult, errorMessage } from '../../lib/output';
 import { isInteractive } from '../../lib/tty';
+import { buildHelpText } from '../../lib/help-text';
 
 export const createContactPropertyCommand = new Command('create')
   .description('Create a new contact property definition')
@@ -15,8 +16,8 @@ export const createContactPropertyCommand = new Command('create')
   .option('--fallback-value <value>', 'Default value used in broadcast templates when a contact has no value set for this property')
   .addHelpText(
     'after',
-    `
-Property keys are used as identifiers in broadcast HTML template interpolation:
+    buildHelpText({
+      context: `Property keys are used as identifiers in broadcast HTML template interpolation:
   {{{PROPERTY_NAME|fallback}}}  — triple-brace syntax substitutes the contact's value
   {{{company_name|Unknown}}}    — falls back to "Unknown" if the property is not set
 
@@ -24,24 +25,16 @@ Reserved keys (cannot be used): FIRST_NAME, LAST_NAME, EMAIL, UNSUBSCRIBE_URL
 
 Non-interactive: --key and --type are required. --fallback-value is optional.
 Warning: do not create properties with reserved key names — they will conflict with
-built-in contact fields and may cause unexpected behavior in broadcasts.
-
-Global options (defined on root):
-  --api-key <key>  API key (or set RESEND_API_KEY env var)
-  --json           Force JSON output (also auto-enabled when stdout is piped)
-
-Output (--json or piped):
-  {"object":"contact_property","id":"<id>"}
-
-Errors (exit code 1):
-  {"error":{"message":"<message>","code":"<code>"}}
-  Codes: auth_error | missing_key | missing_type | invalid_fallback_value | create_error
-
-Examples:
-  $ resend contact-properties create --key company_name --type string
-  $ resend contact-properties create --key company_name --type string --fallback-value "Unknown"
-  $ resend contact-properties create --key employee_count --type number --fallback-value 0
-  $ resend contact-properties create --key department --type string --json`
+built-in contact fields and may cause unexpected behavior in broadcasts.`,
+      output: `  {"object":"contact_property","id":"<id>"}`,
+      errorCodes: ['auth_error', 'missing_key', 'missing_type', 'invalid_fallback_value', 'create_error'],
+      examples: [
+        'resend contact-properties create --key company_name --type string',
+        'resend contact-properties create --key company_name --type string --fallback-value "Unknown"',
+        'resend contact-properties create --key employee_count --type number --fallback-value 0',
+        'resend contact-properties create --key department --type string --json',
+      ],
+    }),
   )
   .action(async (opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;

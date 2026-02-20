@@ -4,34 +4,28 @@ import { requireClient } from '../../lib/client';
 import { createSpinner } from '../../lib/spinner';
 import { outputError, outputResult, errorMessage } from '../../lib/output';
 import { isInteractive } from '../../lib/tty';
+import { buildHelpText } from '../../lib/help-text';
 
 export const getContactPropertyCommand = new Command('get')
   .description('Retrieve a contact property definition by ID')
   .argument('<id>', 'Contact property UUID')
   .addHelpText(
     'after',
-    `
-Global options (defined on root):
-  --api-key <key>  API key (or set RESEND_API_KEY env var)
-  --json           Force JSON output (also auto-enabled when stdout is piped)
-
-Output (--json or piped):
-  {
+    buildHelpText({
+      output: `  {
     "object": "contact_property",
     "id": "<uuid>",
     "key": "company_name",
     "type": "string",
     "fallbackValue": null,
     "createdAt": "2026-01-01T00:00:00.000Z"
-  }
-
-Errors (exit code 1):
-  {"error":{"message":"<message>","code":"<code>"}}
-  Codes: auth_error | fetch_error
-
-Examples:
-  $ resend contact-properties get prop_abc123
-  $ resend contact-properties get prop_abc123 --json`
+  }`,
+      errorCodes: ['auth_error', 'fetch_error'],
+      examples: [
+        'resend contact-properties get prop_abc123',
+        'resend contact-properties get prop_abc123 --json',
+      ],
+    }),
   )
   .action(async (id, _opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
