@@ -9,7 +9,7 @@ import { renderBroadcastsTable } from './utils';
 
 export const listBroadcastsCommand = new Command('list')
   .description('List broadcasts — returns summary objects (use "get <id>" for full details including html/text)')
-  .option('--limit <n>', 'Maximum number of results to return (1–100, default 20)', '20')
+  .option('--limit <n>', 'Maximum number of results to return (1-100)', '10')
   .option('--after <cursor>', 'Cursor for forward pagination — list items after this ID')
   .option('--before <cursor>', 'Cursor for backward pagination — list items before this ID')
   .addHelpText(
