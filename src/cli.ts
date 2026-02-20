@@ -12,6 +12,7 @@ import { audiencesCommand } from './commands/audiences/index';
 import { topicsCommand } from './commands/topics/index';
 import { webhooksCommand } from './commands/webhooks/index';
 import { doctorCommand } from './commands/doctor';
+import { setupCommand } from './commands/setup/index';
 import { VERSION, PACKAGE_NAME } from './lib/version';
 
 const program = new Command()
@@ -46,6 +47,7 @@ Examples:
   .addCommand(audiencesCommand)
   .addCommand(topicsCommand)
   .addCommand(webhooksCommand)
-  .addCommand(doctorCommand);
+  .addCommand(doctorCommand)
+  .addCommand(setupCommand);
 
 program.parse();
