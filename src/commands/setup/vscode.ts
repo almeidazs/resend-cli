@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import type { GlobalOpts } from '../../lib/client';
 import { outputError, outputResult, errorMessage } from '../../lib/output';
 import { isInteractive } from '../../lib/tty';
+import { buildHelpText } from '../../lib/help-text';
 import { mergeJsonConfig } from './utils';
 
 const RESEND_VSCODE_ENTRY = { type: 'stdio', command: 'resend', args: ['mcp', 'serve'] };
@@ -34,8 +35,9 @@ export async function setupVscode(globalOpts: GlobalOpts): Promise<void> {
 
 export const vscodeCommand = new Command('vscode')
   .description('Write .vscode/mcp.json in the current directory for VS Code MCP')
-  .addHelpText('after', `
-What it does:
+  .addHelpText('after', buildHelpText({
+    setup: true,
+    context: `What it does:
   Writes .vscode/mcp.json in the CURRENT WORKING DIRECTORY.
   Uses the "servers" key with "type": "stdio" (VS Code format — different from Cursor/Claude Desktop).
   Existing "servers" entries are preserved (idempotent).
@@ -52,11 +54,14 @@ Important format differences from other tools:
   - Key: "servers" (not "mcpServers")
   - Entry requires "type": "stdio"
 
-Note: Run this command from your project root directory.
-
-Examples:
-  $ resend setup vscode
-  $ resend setup vscode --json`)
+Note: Run this command from your project root directory.`,
+    output: `  {"configured":true,"tool":"vscode","config_path":"<cwd>/.vscode/mcp.json"}`,
+    errorCodes: ['config_write_error'],
+    examples: [
+      'resend setup vscode',
+      'resend setup vscode --json',
+    ],
+  }))
   .action((_opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
     return setupVscode(globalOpts);

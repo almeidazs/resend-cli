@@ -9,6 +9,7 @@ import type { GlobalOpts } from '../lib/client';
 import { outputResult, errorMessage } from '../lib/output';
 import { isInteractive } from '../lib/tty';
 import { VERSION, PACKAGE_NAME } from '../lib/version';
+import { buildHelpText } from '../lib/help-text';
 
 type CheckStatus = 'pass' | 'warn' | 'fail';
 
@@ -173,32 +174,19 @@ function checkAgentDetection(): CheckResult {
 
 export const doctorCommand = new Command('doctor')
   .description('Check CLI version, API key, domain status, and AI agent detection')
-  .addHelpText('after', `
-Checks performed:
+  .addHelpText('after', buildHelpText({
+    setup: true,
+    context: `Checks performed:
   CLI Version    Is the installed version up to date?
   API Key        Is a key present (--api-key, RESEND_API_KEY, or credentials file)?
   API Validation Is the key valid and accepted by the Resend API?
-  AI Agents      Detected: Claude Desktop, Cursor, VS Code MCP, OpenClaw
-
-Global options (defined on root):
-  --json  Force JSON output
-
-Output (--json or piped):
-  {
-    "ok": true,
-    "checks": [
-      {"name":"CLI Version","status":"pass","message":"v0.1.0 (latest)"},
-      {"name":"API Key","status":"pass","message":"re_...abcd (source: env)"},
-      {"name":"Domains","status":"pass","message":"1 verified, 0 pending"},
-      {"name":"AI Agents","status":"pass","message":"Detected: Claude Desktop"}
-    ]
-  }
-  status values: "pass" | "warn" | "fail"
-  Exit code 1 if any check has status "fail"
-
-Examples:
-  $ resend doctor
-  $ resend doctor --json`)
+  AI Agents      Detected: Claude Desktop, Cursor, VS Code MCP, OpenClaw`,
+    output: `  {\n    "ok": true,\n    "checks": [\n      {"name":"CLI Version","status":"pass","message":"v0.1.0 (latest)"},\n      {"name":"API Key","status":"pass","message":"re_...abcd (source: env)"},\n      {"name":"Domains","status":"pass","message":"1 verified, 0 pending"},\n      {"name":"AI Agents","status":"pass","message":"Detected: Claude Desktop"}\n    ]\n  }\n  status values: "pass" | "warn" | "fail"\n  Exit code 1 if any check has status "fail"`,
+    examples: [
+      'resend doctor',
+      'resend doctor --json',
+    ],
+  }))
   .action(async (_opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
     const checks: CheckResult[] = [];

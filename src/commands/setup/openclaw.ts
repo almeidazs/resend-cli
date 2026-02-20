@@ -5,6 +5,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import type { GlobalOpts } from '../../lib/client';
 import { outputError, outputResult, errorMessage } from '../../lib/output';
 import { isInteractive } from '../../lib/tty';
+import { buildHelpText } from '../../lib/help-text';
 
 const SKILL_CONTENT = `# Resend CLI
 
@@ -118,8 +119,9 @@ export async function setupOpenclaw(globalOpts: GlobalOpts): Promise<void> {
 
 export const openclawCommand = new Command('openclaw')
   .description('Create ~/clawd/skills/resend.md skill file for OpenClaw')
-  .addHelpText('after', `
-What it does:
+  .addHelpText('after', buildHelpText({
+    setup: true,
+    context: `What it does:
   Creates ~/clawd/skills/resend.md — a skill file that teaches the OpenClaw agent
   how to authenticate and use the Resend CLI for sending email and managing resources.
 
@@ -130,14 +132,14 @@ The skill file covers:
   - Sending emails (plain text and HTML)
   - Managing domains, contacts, segments, and broadcasts
   - JSON output format for scripting
-  - Health check via \`resend doctor\`
-
-JSON output:
-  { "configured": true, "tool": "openclaw", "config_path": "/Users/you/clawd/skills/resend.md" }
-
-Examples:
-  $ resend setup openclaw
-  $ resend setup openclaw --json`)
+  - Health check via \`resend doctor\``,
+    output: `  {"configured":true,"tool":"openclaw","config_path":"~/clawd/skills/resend.md"}`,
+    errorCodes: ['config_write_error'],
+    examples: [
+      'resend setup openclaw',
+      'resend setup openclaw --json',
+    ],
+  }))
   .action((_opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
     return setupOpenclaw(globalOpts);

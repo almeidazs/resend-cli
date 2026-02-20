@@ -5,6 +5,7 @@ import { homedir } from 'node:os';
 import type { GlobalOpts } from '../../lib/client';
 import { outputError, outputResult, errorMessage } from '../../lib/output';
 import { isInteractive } from '../../lib/tty';
+import { buildHelpText } from '../../lib/help-text';
 import { mergeJsonConfig } from './utils';
 
 const RESEND_MCP_ENTRY = { command: 'resend', args: ['mcp', 'serve'] };
@@ -72,8 +73,9 @@ export async function setupClaudeCode(globalOpts: GlobalOpts): Promise<void> {
 
 export const claudeCodeCommand = new Command('claude-code')
   .description('Register Resend as an MCP server in Claude Code')
-  .addHelpText('after', `
-What it does:
+  .addHelpText('after', buildHelpText({
+    setup: true,
+    context: `What it does:
   Runs \`claude mcp add resend -- resend mcp serve\` using the official Claude Code CLI.
   If the \`claude\` binary is not installed, falls back to writing ~/.claude.json directly.
 
@@ -89,19 +91,14 @@ Fallback method (no claude CLI):
     }
   }
 
-Install Claude Code CLI: https://claude.ai/download
-
-JSON output:
-  Primary:  { "configured": true, "tool": "claude-code", "method": "mcp_add" }
-  Fallback: { "configured": true, "tool": "claude-code", "method": "direct_write", "config_path": "~/.claude.json" }
-
-Error codes:
-  claude_mcp_add_failed  \`claude\` found but \`claude mcp add\` exited non-zero
-  config_write_error     ~/.claude.json write failed (fallback path)
-
-Examples:
-  $ resend setup claude-code
-  $ resend setup claude-code --json`)
+Install Claude Code CLI: https://claude.ai/download`,
+    output: `  Primary:  {"configured":true,"tool":"claude-code","method":"mcp_add"}\n  Fallback: {"configured":true,"tool":"claude-code","method":"direct_write","config_path":"~/.claude.json"}`,
+    errorCodes: ['claude_mcp_add_failed', 'config_write_error'],
+    examples: [
+      'resend setup claude-code',
+      'resend setup claude-code --json',
+    ],
+  }))
   .action((_opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
     return setupClaudeCode(globalOpts);

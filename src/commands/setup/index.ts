@@ -7,6 +7,7 @@ import type { GlobalOpts } from '../../lib/client';
 import { outputError } from '../../lib/output';
 import { isInteractive } from '../../lib/tty';
 import { cancelAndExit } from '../../lib/prompts';
+import { buildHelpText } from '../../lib/help-text';
 import { cursorCommand, setupCursor } from './cursor';
 import { claudeDesktopCommand, setupClaudeDesktop } from './claude-desktop';
 import { claudeCodeCommand, setupClaudeCode } from './claude-code';
@@ -23,8 +24,9 @@ const SETUP_FNS = {
 
 export const setupCommand = new Command('setup')
   .description('Configure AI tools to use Resend CLI as an MCP server')
-  .addHelpText('after', `
-Targets:
+  .addHelpText('after', buildHelpText({
+    setup: true,
+    context: `Targets:
   cursor          Write MCP config to ~/.cursor/mcp.json
   claude-desktop  Write MCP config to Claude Desktop config file
   claude-code     Run \`claude mcp add resend -- resend mcp serve\`
@@ -36,20 +38,17 @@ Behavior:
   \`resend setup <target>\`   Configure a specific tool directly
 
 All subcommands are idempotent — running them twice is safe.
-Each subcommand outputs JSON when --json is set or stdout is not a TTY.
-
-Error codes:
-  missing_target         No subcommand given in non-interactive mode
-  config_write_error     File system write failed
-  claude_mcp_add_failed  \`claude mcp add\` exited non-zero
-
-Examples:
-  $ resend setup
-  $ resend setup cursor
-  $ resend setup claude-desktop --json
-  $ resend setup claude-code
-  $ resend setup vscode
-  $ resend setup openclaw`)
+Each subcommand outputs JSON when --json is set or stdout is not a TTY.`,
+    errorCodes: ['missing_target', 'config_write_error', 'claude_mcp_add_failed'],
+    examples: [
+      'resend setup',
+      'resend setup cursor',
+      'resend setup claude-desktop --json',
+      'resend setup claude-code',
+      'resend setup vscode',
+      'resend setup openclaw',
+    ],
+  }))
   .addCommand(cursorCommand)
   .addCommand(claudeDesktopCommand)
   .addCommand(claudeCodeCommand)
