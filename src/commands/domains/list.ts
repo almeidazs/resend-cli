@@ -44,6 +44,6 @@ export const listDomainsCommand = new Command('list')
       console.log(renderDomainsTable(list.data));
       printPaginationHint(list);
     } else {
-      outputResult(list, { json: globalOpts.json });
+      outputResult(list!, { json: globalOpts.json });
     }
   });

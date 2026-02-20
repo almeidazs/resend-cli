@@ -76,11 +76,7 @@ describe('api-keys delete command', () => {
     exitSpy = mockExitThrow();
 
     const { deleteApiKeyCommand } = await import('../../../src/commands/api-keys/delete');
-    try {
-      await deleteApiKeyCommand.parseAsync(['test-key-id'], { from: 'user' });
-    } catch {
-      // expected exit
-    }
+    await expectExit1(() => deleteApiKeyCommand.parseAsync(['test-key-id'], { from: 'user' }));
 
     expect(mockRemove).not.toHaveBeenCalled();
   });

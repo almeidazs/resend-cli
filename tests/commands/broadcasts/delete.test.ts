@@ -78,11 +78,7 @@ describe('broadcasts delete command', () => {
     exitSpy = mockExitThrow();
 
     const { deleteBroadcastCommand } = await import('../../../src/commands/broadcasts/delete');
-    try {
-      await deleteBroadcastCommand.parseAsync(['bcast_abc123'], { from: 'user' });
-    } catch {
-      // expected exit
-    }
+    await expectExit1(() => deleteBroadcastCommand.parseAsync(['bcast_abc123'], { from: 'user' }));
 
     expect(mockRemove).not.toHaveBeenCalled();
   });

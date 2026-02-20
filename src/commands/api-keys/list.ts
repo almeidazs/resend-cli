@@ -36,6 +36,6 @@ export const listApiKeysCommand = new Command('list')
     if (!globalOpts.json && isInteractive()) {
       console.log(renderApiKeysTable(list.data));
     } else {
-      outputResult(list, { json: globalOpts.json });
+      outputResult(list!, { json: globalOpts.json });
     }
   });

@@ -36,6 +36,6 @@ contacts is handled via "resend contacts topics <contactId>".`,
     if (!globalOpts.json && isInteractive()) {
       console.log(renderTopicsTable(list.data));
     } else {
-      outputResult(list, { json: globalOpts.json });
+      outputResult(list!, { json: globalOpts.json });
     }
   });

@@ -76,11 +76,7 @@ describe('domains delete command', () => {
     exitSpy = mockExitThrow();
 
     const { deleteDomainCommand } = await import('../../../src/commands/domains/delete');
-    try {
-      await deleteDomainCommand.parseAsync(['test-domain-id'], { from: 'user' });
-    } catch {
-      // expected exit
-    }
+    await expectExit1(() => deleteDomainCommand.parseAsync(['test-domain-id'], { from: 'user' }));
 
     expect(mockRemove).not.toHaveBeenCalled();
   });

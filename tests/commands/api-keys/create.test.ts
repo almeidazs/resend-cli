@@ -104,11 +104,7 @@ describe('api-keys create command', () => {
     exitSpy = mockExitThrow();
 
     const { createApiKeyCommand } = await import('../../../src/commands/api-keys/create');
-    try {
-      await createApiKeyCommand.parseAsync([], { from: 'user' });
-    } catch {
-      // expected exit
-    }
+    await expectExit1(() => createApiKeyCommand.parseAsync([], { from: 'user' }));
 
     expect(mockCreate).not.toHaveBeenCalled();
   });

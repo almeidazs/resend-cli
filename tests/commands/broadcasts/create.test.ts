@@ -221,11 +221,7 @@ describe('broadcasts create command', () => {
     exitSpy = mockExitThrow();
 
     const { createBroadcastCommand } = await import('../../../src/commands/broadcasts/create');
-    try {
-      await createBroadcastCommand.parseAsync([], { from: 'user' });
-    } catch {
-      // expected exit
-    }
+    await expectExit1(() => createBroadcastCommand.parseAsync([], { from: 'user' }));
 
     expect(mockCreate).not.toHaveBeenCalled();
   });

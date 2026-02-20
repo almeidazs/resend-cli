@@ -52,6 +52,6 @@ export const listContactPropertiesCommand = new Command('list')
       console.log(renderContactPropertiesTable(list.data));
       printPaginationHint(list);
     } else {
-      outputResult(list, { json: globalOpts.json });
+      outputResult(list!, { json: globalOpts.json });
     }
   });

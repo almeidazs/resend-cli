@@ -49,6 +49,6 @@ or "resend contacts add-segment".`,
       console.log(renderSegmentsTable(list.data));
       printPaginationHint(list);
     } else {
-      outputResult(list, { json: globalOpts.json });
+      outputResult(list!, { json: globalOpts.json });
     }
   });

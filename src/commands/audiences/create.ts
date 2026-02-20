@@ -58,9 +58,8 @@ Non-interactive: --name is required.`,
     );
 
     if (!globalOpts.json && isInteractive()) {
-      const d = data;
-      console.log(`\nAudience created: ${d.id}`);
-      console.log(`Name: ${d.name}`);
+      console.log(`\nAudience created: ${data.id}`);
+      console.log(`Name: ${data.name}`);
     } else {
       outputResult({ deprecated: true, deprecation_message: DEPRECATION_MSG, data }, { json: globalOpts.json });
     }

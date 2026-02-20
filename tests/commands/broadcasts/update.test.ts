@@ -108,11 +108,7 @@ describe('broadcasts update command', () => {
     exitSpy = mockExitThrow();
 
     const { updateBroadcastCommand } = await import('../../../src/commands/broadcasts/update');
-    try {
-      await updateBroadcastCommand.parseAsync(['bcast_abc123'], { from: 'user' });
-    } catch {
-      // expected exit
-    }
+    await expectExit1(() => updateBroadcastCommand.parseAsync(['bcast_abc123'], { from: 'user' }));
 
     expect(mockUpdate).not.toHaveBeenCalled();
   });

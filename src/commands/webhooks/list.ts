@@ -46,6 +46,6 @@ The response includes has_more: true when additional pages exist.`,
       console.log(renderWebhooksTable(list.data));
       printPaginationHint(list);
     } else {
-      outputResult(list, { json: globalOpts.json });
+      outputResult(list!, { json: globalOpts.json });
     }
   });

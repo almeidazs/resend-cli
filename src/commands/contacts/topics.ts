@@ -44,6 +44,6 @@ Use "resend contacts update-topics <id>" to change subscription statuses.`,
     if (!globalOpts.json && isInteractive()) {
       console.log(renderContactTopicsTable(list.data));
     } else {
-      outputResult(list, { json: globalOpts.json });
+      outputResult(list!, { json: globalOpts.json });
     }
   });

@@ -44,18 +44,12 @@ describe('readFile', () => {
     expect(output).toContain('file_read_error');
   });
 
-  test('outputs JSON error with file_read_error code when json option is true', () => {
+  test('outputs JSON error with file_read_error code when json option is true', async () => {
     errorSpy = spyOn(console, 'error').mockImplementation(() => {});
-    exitSpy = spyOn(process, 'exit').mockImplementation((code?: number) => {
-      throw new Error(`exit(${code})`);
-    });
+    exitSpy = mockExitThrow();
 
     const { readFile } = require('../../src/lib/files');
-    try {
-      readFile('/nonexistent/file.txt', jsonOpts);
-    } catch {
-      // expected exit
-    }
+    await expectExit1(async () => readFile('/nonexistent/file.txt', jsonOpts));
 
     const raw = errorSpy!.mock.calls.map((c) => c[0]).join(' ');
     const parsed = JSON.parse(raw);

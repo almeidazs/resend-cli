@@ -48,6 +48,6 @@ Pagination: use --after or --before with a contact ID as the cursor.
       console.log(renderContactsTable(list.data));
       printPaginationHint(list);
     } else {
-      outputResult(list, { json: globalOpts.json });
+      outputResult(list!, { json: globalOpts.json });
     }
   });

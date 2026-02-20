@@ -87,11 +87,7 @@ describe('contacts delete command', () => {
     exitSpy = mockExitThrow();
 
     const { deleteContactCommand } = await import('../../../src/commands/contacts/delete');
-    try {
-      await deleteContactCommand.parseAsync(['contact_abc123'], { from: 'user' });
-    } catch {
-      // expected exit
-    }
+    await expectExit1(() => deleteContactCommand.parseAsync(['contact_abc123'], { from: 'user' }));
 
     expect(mockRemove).not.toHaveBeenCalled();
   });

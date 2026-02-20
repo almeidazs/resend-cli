@@ -10,7 +10,7 @@ import { outputError, outputResult, errorMessage } from '../../lib/output';
 import { isInteractive } from '../../lib/tty';
 import { buildHelpText } from '../../lib/help-text';
 
-const RESEND_API_KEYS_URL = 'https://resend.com/api-keys';
+const RESEND_API_KEYS_URL = 'https://resend.com/api-keys?new=true';
 
 function openInBrowser(url: string): Promise<boolean> {
   return new Promise((resolve) => {
@@ -58,20 +58,24 @@ Credentials stored at: ~/.config/resend/credentials.json
       const existing = resolveApiKey();
       if (existing) {
         p.log.info(`Existing API key found (source: ${existing.source}). Enter a new key to replace it.`);
-      } else {
-        const shouldOpen = await p.confirm({
-          message: 'No API key found. Open Resend dashboard to create one?',
-        });
+      }
 
-        if (p.isCancel(shouldOpen)) cancelAndExit('Login cancelled.');
+      const method = await p.select({
+        message: 'How would you like to get your API key?',
+        options: [
+          { value: 'browser' as const, label: 'Open resend.com/api-keys in browser' },
+          { value: 'manual' as const, label: 'Enter API key manually' },
+        ],
+      });
 
-        if (shouldOpen) {
-          const opened = await openInBrowser(RESEND_API_KEYS_URL);
-          if (opened) {
-            p.log.info(`Opened ${RESEND_API_KEYS_URL}`);
-          } else {
-            p.log.warn(`Could not open browser. Visit ${RESEND_API_KEYS_URL} manually.`);
-          }
+      if (p.isCancel(method)) cancelAndExit('Login cancelled.');
+
+      if (method === 'browser') {
+        const opened = await openInBrowser(RESEND_API_KEYS_URL);
+        if (opened) {
+          p.log.info(`Opened ${RESEND_API_KEYS_URL}`);
+        } else {
+          p.log.warn(`Could not open browser. Visit ${RESEND_API_KEYS_URL} manually.`);
         }
       }
 

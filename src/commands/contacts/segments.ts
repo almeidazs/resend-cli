@@ -38,6 +38,6 @@ export const listContactSegmentsCommand = new Command('segments')
     if (!globalOpts.json && isInteractive()) {
       console.log(renderSegmentsTable(list.data));
     } else {
-      outputResult(list, { json: globalOpts.json });
+      outputResult(list!, { json: globalOpts.json });
     }
   });

@@ -46,6 +46,6 @@ export const listReceivingCommand = new Command('list')
       console.log(renderReceivingEmailsTable(list.data));
       printPaginationHint(list);
     } else {
-      outputResult(list, { json: globalOpts.json });
+      outputResult(list!, { json: globalOpts.json });
     }
   });

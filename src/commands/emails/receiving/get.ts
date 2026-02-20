@@ -35,21 +35,20 @@ export const getReceivingCommand = new Command('get')
     );
 
     if (!globalOpts.json && isInteractive()) {
-      const d = data;
-      console.log(`\nFrom:    ${d.from}`);
-      console.log(`To:      ${d.to.join(', ')}`);
-      console.log(`Subject: ${d.subject}`);
-      console.log(`Date:    ${d.created_at}`);
-      if (d.attachments.length > 0) {
-        console.log(`Files:   ${d.attachments.length} attachment(s)`);
+      console.log(`\nFrom:    ${data.from}`);
+      console.log(`To:      ${data.to.join(', ')}`);
+      console.log(`Subject: ${data.subject}`);
+      console.log(`Date:    ${data.created_at}`);
+      if (data.attachments.length > 0) {
+        console.log(`Files:   ${data.attachments.length} attachment(s)`);
       }
-      if (d.text) {
-        const snippet = d.text.length > 200 ? `${d.text.slice(0, 197)}...` : d.text;
+      if (data.text) {
+        const snippet = data.text.length > 200 ? `${data.text.slice(0, 197)}...` : data.text;
         console.log(`\n${snippet}`);
-      } else if (d.html) {
+      } else if (data.html) {
         console.log('\n(HTML body only — use --json to view or pipe to a browser)');
       }
     } else {
-      outputResult(data, { json: globalOpts.json });
+      outputResult(data!, { json: globalOpts.json });
     }
   });

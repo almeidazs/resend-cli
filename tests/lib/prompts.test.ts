@@ -1,5 +1,5 @@
 import { describe, test, expect, spyOn, afterEach } from 'bun:test';
-import { ExitError, mockExitThrow, expectExit1 } from '../helpers';
+import { mockExitThrow, expectExit1 } from '../helpers';
 
 describe('promptForMissing', () => {
   const originalStdinIsTTY = process.stdin.isTTY;
@@ -125,9 +125,7 @@ describe('confirmDelete', () => {
     exitSpy = mockExitThrow();
 
     const { confirmDelete } = require('../../src/lib/prompts');
-    try {
-      await confirmDelete('res_123', 'Delete?', { json: true });
-    } catch { /* expected exit */ }
+    await expectExit1(() => confirmDelete('res_123', 'Delete?', { json: true }));
 
     const raw = errorSpy!.mock.calls.map((c) => c[0]).join(' ');
     const parsed = JSON.parse(raw);

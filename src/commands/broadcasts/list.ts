@@ -46,6 +46,6 @@ To retrieve full details (html, from, subject), use: resend broadcasts get <id>`
       console.log(renderBroadcastsTable(list.data));
       printPaginationHint(list);
     } else {
-      outputResult(list, { json: globalOpts.json });
+      outputResult(list!, { json: globalOpts.json });
     }
   });
