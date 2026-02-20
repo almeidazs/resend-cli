@@ -8,6 +8,7 @@ import { createSpinner } from '../../lib/spinner';
 import { outputError, outputResult, errorMessage } from '../../lib/output';
 import { readFile } from '../../lib/files';
 import { isInteractive } from '../../lib/tty';
+import { buildHelpText } from '../../lib/help-text';
 
 export const createBroadcastCommand = new Command('create')
   .description('Create a broadcast draft (or send immediately with --send)')
@@ -25,8 +26,8 @@ export const createBroadcastCommand = new Command('create')
   .option('--scheduled-at <datetime>', 'Schedule delivery — ISO 8601 or natural language e.g. "in 1 hour", "tomorrow at 9am ET" (only valid with --send)')
   .addHelpText(
     'after',
-    `
-Non-interactive: --from, --subject, and --segment-id are required.
+    buildHelpText({
+      context: `Non-interactive: --from, --subject, and --segment-id are required.
 Body: provide exactly one of --html, --html-file, or --text.
 
 Variable interpolation:
@@ -36,24 +37,16 @@ Variable interpolation:
 Scheduling:
   Use --scheduled-at with --send to schedule delivery.
   Accepts ISO 8601 (e.g. 2026-08-05T11:52:01Z) or natural language (e.g. "in 1 hour").
-  --scheduled-at without --send is ignored.
-
-Global options (defined on root):
-  --api-key <key>  API key (or set RESEND_API_KEY env var)
-  --json           Force JSON output (also auto-enabled when stdout is piped)
-
-Output (--json or piped):
-  {"id":"<broadcast-id>"}
-
-Errors (exit code 1):
-  {"error":{"message":"<message>","code":"<code>"}}
-  Codes: auth_error | missing_from | missing_subject | missing_segment | missing_body | file_read_error | create_error
-
-Examples:
-  $ resend broadcasts create --from hello@domain.com --subject "Weekly Update" --segment-id seg_123 --html "<p>Hello {{{FIRST_NAME|there}}}</p>"
-  $ resend broadcasts create --from hello@domain.com --subject "Launch" --segment-id seg_123 --html-file ./email.html --send
-  $ resend broadcasts create --from hello@domain.com --subject "Launch" --segment-id seg_123 --text "Hello!" --send --scheduled-at "tomorrow at 9am ET"
-  $ resend broadcasts create --from hello@domain.com --subject "News" --segment-id seg_123 --html "<p>Hi</p>" --json`
+  --scheduled-at without --send is ignored.`,
+      output: `  {"id":"<broadcast-id>"}`,
+      errorCodes: ['auth_error', 'missing_from', 'missing_subject', 'missing_segment', 'missing_body', 'file_read_error', 'create_error'],
+      examples: [
+        'resend broadcasts create --from hello@domain.com --subject "Weekly Update" --segment-id seg_123 --html "<p>Hello {{{FIRST_NAME|there}}}</p>"',
+        'resend broadcasts create --from hello@domain.com --subject "Launch" --segment-id seg_123 --html-file ./email.html --send',
+        'resend broadcasts create --from hello@domain.com --subject "Launch" --segment-id seg_123 --text "Hello!" --send --scheduled-at "tomorrow at 9am ET"',
+        'resend broadcasts create --from hello@domain.com --subject "News" --segment-id seg_123 --html "<p>Hi</p>" --json',
+      ],
+    })
   )
   .action(async (opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;

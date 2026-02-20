@@ -5,6 +5,7 @@ import { createSpinner } from '../../lib/spinner';
 import { outputError, outputResult, errorMessage } from '../../lib/output';
 import { readFile } from '../../lib/files';
 import { isInteractive } from '../../lib/tty';
+import { buildHelpText } from '../../lib/help-text';
 
 export const updateBroadcastCommand = new Command('update')
   .description('Update a draft broadcast — only drafts can be updated; sent broadcasts are immutable')
@@ -17,29 +18,21 @@ export const updateBroadcastCommand = new Command('update')
   .option('--name <name>', 'Update internal label')
   .addHelpText(
     'after',
-    `
-Note: Only draft broadcasts can be updated.
+    buildHelpText({
+      context: `Note: Only draft broadcasts can be updated.
 If the broadcast is already sent or sending, the API will return an error.
 
 Variable interpolation:
   HTML bodies support triple-brace syntax for contact properties.
-  Example: {{{FIRST_NAME|Friend}}} — uses FIRST_NAME or falls back to "Friend".
-
-Global options (defined on root):
-  --api-key <key>  API key (or set RESEND_API_KEY env var)
-  --json           Force JSON output (also auto-enabled when stdout is piped)
-
-Output (--json or piped):
-  {"id":"<broadcast-id>"}
-
-Errors (exit code 1):
-  {"error":{"message":"<message>","code":"<code>"}}
-  Codes: auth_error | no_changes | file_read_error | update_error
-
-Examples:
-  $ resend broadcasts update bcast_123abc --subject "Updated Subject"
-  $ resend broadcasts update bcast_123abc --html-file ./new-email.html
-  $ resend broadcasts update bcast_123abc --name "Q1 Newsletter" --from "news@domain.com" --json`
+  Example: {{{FIRST_NAME|Friend}}} — uses FIRST_NAME or falls back to "Friend".`,
+      output: `  {"id":"<broadcast-id>"}`,
+      errorCodes: ['auth_error', 'no_changes', 'file_read_error', 'update_error'],
+      examples: [
+        'resend broadcasts update bcast_123abc --subject "Updated Subject"',
+        'resend broadcasts update bcast_123abc --html-file ./new-email.html',
+        'resend broadcasts update bcast_123abc --name "Q1 Newsletter" --from "news@domain.com" --json',
+      ],
+    })
   )
   .action(async (id, opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;

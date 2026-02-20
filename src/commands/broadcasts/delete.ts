@@ -5,6 +5,7 @@ import { confirmDelete } from '../../lib/prompts';
 import { createSpinner } from '../../lib/spinner';
 import { outputError, outputResult, errorMessage } from '../../lib/output';
 import { isInteractive } from '../../lib/tty';
+import { buildHelpText } from '../../lib/help-text';
 
 export const deleteBroadcastCommand = new Command('delete')
   .description('Delete a broadcast — draft broadcasts are removed; scheduled broadcasts are cancelled before delivery')
@@ -12,26 +13,18 @@ export const deleteBroadcastCommand = new Command('delete')
   .option('--yes', 'Skip confirmation prompt')
   .addHelpText(
     'after',
-    `
-Non-interactive: --yes is required to confirm deletion when stdin/stdout is not a TTY.
-
-Warning: Deleting a scheduled broadcast cancels its delivery immediately.
+    buildHelpText({
+      context: `Warning: Deleting a scheduled broadcast cancels its delivery immediately.
 Only draft and scheduled broadcasts can be deleted; sent broadcasts cannot.
 
-Global options (defined on root):
-  --api-key <key>  API key (or set RESEND_API_KEY env var)
-  --json           Force JSON output (also auto-enabled when stdout is piped)
-
-Output (--json or piped):
-  {"object":"broadcast","id":"<id>","deleted":true}
-
-Errors (exit code 1):
-  {"error":{"message":"<message>","code":"<code>"}}
-  Codes: auth_error | confirmation_required | delete_error
-
-Examples:
-  $ resend broadcasts delete bcast_123abc --yes
-  $ resend broadcasts delete bcast_123abc --yes --json`
+Non-interactive: --yes is required to confirm deletion when stdin/stdout is not a TTY.`,
+      output: `  {"object":"broadcast","id":"<id>","deleted":true}`,
+      errorCodes: ['auth_error', 'confirmation_required', 'delete_error'],
+      examples: [
+        'resend broadcasts delete bcast_123abc --yes',
+        'resend broadcasts delete bcast_123abc --yes --json',
+      ],
+    })
   )
   .action(async (id, opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;

@@ -5,30 +5,23 @@ import { createSpinner } from '../../lib/spinner';
 import { outputError, outputResult, errorMessage } from '../../lib/output';
 import { isInteractive } from '../../lib/tty';
 import { broadcastStatusIndicator } from './utils';
+import { buildHelpText } from '../../lib/help-text';
 
 export const getBroadcastCommand = new Command('get')
   .description('Retrieve full details for a broadcast including HTML body, status, and delivery times')
   .argument('<id>', 'Broadcast ID')
   .addHelpText(
     'after',
-    `
-Note: The list command returns summary objects without html/text/from/subject.
-Use this command to retrieve the full broadcast payload.
-
-Global options (defined on root):
-  --api-key <key>  API key (or set RESEND_API_KEY env var)
-  --json           Force JSON output (also auto-enabled when stdout is piped)
-
-Output (--json or piped):
-  {"id":"...","object":"broadcast","name":"...","segment_id":"...","from":"...","subject":"...","status":"draft|queued|sent","created_at":"...","scheduled_at":null,"sent_at":null}
-
-Errors (exit code 1):
-  {"error":{"message":"<message>","code":"<code>"}}
-  Codes: auth_error | fetch_error
-
-Examples:
-  $ resend broadcasts get bcast_123abc
-  $ resend broadcasts get bcast_123abc --json`
+    buildHelpText({
+      context: `Note: The list command returns summary objects without html/text/from/subject.
+Use this command to retrieve the full broadcast payload.`,
+      output: `  {"id":"...","object":"broadcast","name":"...","segment_id":"...","from":"...","subject":"...","status":"draft|queued|sent","created_at":"...","scheduled_at":null,"sent_at":null}`,
+      errorCodes: ['auth_error', 'fetch_error'],
+      examples: [
+        'resend broadcasts get bcast_123abc',
+        'resend broadcasts get bcast_123abc --json',
+      ],
+    })
   )
   .action(async (id, _opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;

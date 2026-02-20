@@ -6,6 +6,7 @@ import { outputError, outputResult, errorMessage } from '../../lib/output';
 import { parseLimitOpt, buildPaginationOpts, printPaginationHint } from '../../lib/pagination';
 import { isInteractive } from '../../lib/tty';
 import { renderBroadcastsTable } from './utils';
+import { buildHelpText } from '../../lib/help-text';
 
 export const listBroadcastsCommand = new Command('list')
   .description('List broadcasts — returns summary objects (use "get <id>" for full details including html/text)')
@@ -14,26 +15,18 @@ export const listBroadcastsCommand = new Command('list')
   .option('--before <cursor>', 'Cursor for backward pagination — list items before this ID')
   .addHelpText(
     'after',
-    `
-Note: List results include name, status, created_at, and id only.
-To retrieve full details (html, from, subject), use: resend broadcasts get <id>
-
-Global options (defined on root):
-  --api-key <key>  API key (or set RESEND_API_KEY env var)
-  --json           Force JSON output (also auto-enabled when stdout is piped)
-
-Output (--json or piped):
-  {"object":"list","has_more":false,"data":[{"id":"...","name":"...","status":"draft|queued|sent","created_at":"..."}]}
-
-Errors (exit code 1):
-  {"error":{"message":"<message>","code":"<code>"}}
-  Codes: auth_error | invalid_limit | list_error
-
-Examples:
-  $ resend broadcasts list
-  $ resend broadcasts list --limit 5
-  $ resend broadcasts list --after bcast_abc --limit 10
-  $ resend broadcasts list --json`
+    buildHelpText({
+      context: `Note: List results include name, status, created_at, and id only.
+To retrieve full details (html, from, subject), use: resend broadcasts get <id>`,
+      output: `  {"object":"list","has_more":false,"data":[{"id":"...","name":"...","status":"draft|queued|sent","created_at":"..."}]}`,
+      errorCodes: ['auth_error', 'invalid_limit', 'list_error'],
+      examples: [
+        'resend broadcasts list',
+        'resend broadcasts list --limit 5',
+        'resend broadcasts list --after bcast_abc --limit 10',
+        'resend broadcasts list --json',
+      ],
+    })
   )
   .action(async (opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
