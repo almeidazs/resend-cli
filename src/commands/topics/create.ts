@@ -6,6 +6,7 @@ import { cancelAndExit } from '../../lib/prompts';
 import { createSpinner } from '../../lib/spinner';
 import { outputError, outputResult, errorMessage } from '../../lib/output';
 import { isInteractive } from '../../lib/tty';
+import { buildHelpText } from '../../lib/help-text';
 
 export const createTopicCommand = new Command('create')
   .description('Create a new topic for subscription management')
@@ -18,8 +19,8 @@ export const createTopicCommand = new Command('create')
   )
   .addHelpText(
     'after',
-    `
-Topics enable fine-grained subscription management. Contacts can opt in or out of
+    buildHelpText({
+      context: `Topics enable fine-grained subscription management. Contacts can opt in or out of
 individual topics. Broadcasts can target only contacts opted into a specific topic.
 
 Example topics: "Product Updates", "Security Alerts", "Weekly Digest".
@@ -28,23 +29,15 @@ Example topics: "Product Updates", "Security Alerts", "Weekly Digest".
   opt_in   Contacts receive broadcasts unless they explicitly opt out (default)
   opt_out  Contacts do NOT receive broadcasts unless they explicitly opt in
 
-Non-interactive: --name is required.
-
-Global options (defined on root):
-  --api-key <key>  API key (or set RESEND_API_KEY env var)
-  --json           Force JSON output (also auto-enabled when stdout is piped)
-
-Output (--json or piped):
-  {"id":"<uuid>"}
-
-Errors (exit code 1):
-  {"error":{"message":"<message>","code":"<code>"}}
-  Codes: auth_error | missing_name | create_error
-
-Examples:
-  $ resend topics create --name "Product Updates"
-  $ resend topics create --name "Weekly Digest" --default-subscription opt_out
-  $ resend topics create --name "Security Alerts" --description "Critical security notices" --json`
+Non-interactive: --name is required.`,
+      output: `  {"id":"<uuid>"}`,
+      errorCodes: ['auth_error', 'missing_name', 'create_error'],
+      examples: [
+        'resend topics create --name "Product Updates"',
+        'resend topics create --name "Weekly Digest" --default-subscription opt_out',
+        'resend topics create --name "Security Alerts" --description "Critical security notices" --json',
+      ],
+    }),
   )
   .action(async (opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;

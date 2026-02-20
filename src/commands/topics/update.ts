@@ -4,6 +4,7 @@ import { requireClient } from '../../lib/client';
 import { createSpinner } from '../../lib/spinner';
 import { outputError, outputResult, errorMessage } from '../../lib/output';
 import { isInteractive } from '../../lib/tty';
+import { buildHelpText } from '../../lib/help-text';
 
 export const updateTopicCommand = new Command('update')
   .description("Update a topic's name or description")
@@ -12,26 +13,18 @@ export const updateTopicCommand = new Command('update')
   .option('--description <description>', 'New description shown to contacts')
   .addHelpText(
     'after',
-    `
-At least one of --name or --description must be provided to update the topic.
+    buildHelpText({
+      context: `At least one of --name or --description must be provided to update the topic.
 
 Note: --default-subscription cannot be changed after creation.
-To change the default subscription, delete the topic and recreate it.
-
-Global options (defined on root):
-  --api-key <key>  API key (or set RESEND_API_KEY env var)
-  --json           Force JSON output (also auto-enabled when stdout is piped)
-
-Output (--json or piped):
-  {"id":"<uuid>"}
-
-Errors (exit code 1):
-  {"error":{"message":"<message>","code":"<code>"}}
-  Codes: auth_error | no_changes | update_error
-
-Examples:
-  $ resend topics update 78261eea-8f8b-4381-83c6-79fa7120f1cf --name "Security Alerts"
-  $ resend topics update 78261eea-8f8b-4381-83c6-79fa7120f1cf --description "Critical notices" --json`
+To change the default subscription, delete the topic and recreate it.`,
+      output: `  {"id":"<uuid>"}`,
+      errorCodes: ['auth_error', 'no_changes', 'update_error'],
+      examples: [
+        'resend topics update 78261eea-8f8b-4381-83c6-79fa7120f1cf --name "Security Alerts"',
+        'resend topics update 78261eea-8f8b-4381-83c6-79fa7120f1cf --description "Critical notices" --json',
+      ],
+    }),
   )
   .action(async (id, opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
