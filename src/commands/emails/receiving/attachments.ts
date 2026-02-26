@@ -47,6 +47,6 @@ export const listAttachmentsCommand = new Command('attachments')
       console.log(renderAttachmentsTable(list.data));
       printPaginationHint(list);
     } else {
-      outputResult(list!, { json: globalOpts.json });
+      outputResult(list, { json: globalOpts.json });
     }
   });
