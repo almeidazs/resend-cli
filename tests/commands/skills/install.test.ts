@@ -30,6 +30,7 @@ const MOCK_TREE = {
     { path: 'pnpm-lock.yaml', type: 'blob' },
     { path: 'tests/test.md', type: 'blob' },
     { path: '.github/workflows/ci.yml', type: 'blob' },
+    { path: '.gitignore', type: 'blob' },
   ],
 };
 

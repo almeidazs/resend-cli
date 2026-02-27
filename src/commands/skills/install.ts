@@ -19,7 +19,7 @@ const EXCLUDED = [
   /^package\.json$/,
   /^pnpm-lock\.yaml$/,
   /^tests\//,
-  /^\.github\//,
+  /^\./,  // root-level dotfiles and dot-directories (.gitignore, .github/, etc.)
 ];
 
 function shouldInclude(path: string): boolean {
