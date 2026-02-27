@@ -1,10 +1,9 @@
 import { Command, Option } from '@commander-js/extra-typings';
 import * as p from '@clack/prompts';
 import type { GlobalOpts } from '../../lib/client';
-import { requireClient } from '../../lib/client';
+import { runCreate } from '../../lib/actions';
 import { cancelAndExit } from '../../lib/prompts';
-import { withSpinner } from '../../lib/spinner';
-import { outputError, outputResult } from '../../lib/output';
+import { outputError } from '../../lib/output';
 import { isInteractive } from '../../lib/tty';
 import { buildHelpText } from '../../lib/help-text';
 import { renderDnsRecordsTable } from './utils';
@@ -45,8 +44,6 @@ export const createDomainCommand = new Command('create')
   .action(async (opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
 
-    const resend = requireClient(globalOpts);
-
     let name = opts.name;
 
     if (!name) {
@@ -63,10 +60,10 @@ export const createDomainCommand = new Command('create')
       name = result;
     }
 
-    const d = await withSpinner(
-      { loading: 'Creating domain...', success: 'Domain created', fail: 'Failed to create domain' },
-      () => resend.domains.create({
-        name,
+    await runCreate({
+      spinner: { loading: 'Creating domain...', success: 'Domain created', fail: 'Failed to create domain' },
+      sdkCall: (resend) => resend.domains.create({
+        name: name!,
         ...(opts.region && { region: opts.region }),
         ...(opts.tls && { tls: opts.tls }),
         ...((opts.sending || opts.receiving) && {
@@ -76,16 +73,11 @@ export const createDomainCommand = new Command('create')
           },
         }),
       }),
-      'create_error',
-      globalOpts,
-    );
-
-    if (!globalOpts.json && isInteractive()) {
-      console.log(`\nDomain created: ${d.name} (id: ${d.id})`);
-      console.log('\nDNS Records to configure:');
-      console.log(renderDnsRecordsTable(d.records, d.name));
-      console.log(`\nRun \`resend domains verify ${d.id}\` after configuring DNS.`);
-    } else {
-      outputResult(d, { json: globalOpts.json });
-    }
+      onInteractive: (d) => {
+        console.log(`\nDomain created: ${d.name} (id: ${d.id})`);
+        console.log('\nDNS Records to configure:');
+        console.log(renderDnsRecordsTable(d.records, d.name));
+        console.log(`\nRun \`resend domains verify ${d.id}\` after configuring DNS.`);
+      },
+    }, globalOpts);
   });

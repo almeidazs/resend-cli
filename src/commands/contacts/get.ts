@@ -1,9 +1,6 @@
 import { Command } from '@commander-js/extra-typings';
 import type { GlobalOpts } from '../../lib/client';
-import { requireClient } from '../../lib/client';
-import { withSpinner } from '../../lib/spinner';
-import { outputResult } from '../../lib/output';
-import { isInteractive } from '../../lib/tty';
+import { runGet } from '../../lib/actions';
 import { buildHelpText } from '../../lib/help-text';
 
 export const getContactCommand = new Command('get')
@@ -23,29 +20,22 @@ export const getContactCommand = new Command('get')
   )
   .action(async (id, _opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
-    const resend = requireClient(globalOpts);
-
-    const data = await withSpinner(
-      { loading: 'Fetching contact...', success: 'Contact fetched', fail: 'Failed to fetch contact' },
-      () => resend.contacts.get(id),
-      'fetch_error',
-      globalOpts,
-    );
-
-    if (!globalOpts.json && isInteractive()) {
-      const name = [data.first_name, data.last_name].filter(Boolean).join(' ');
-      console.log(`\n${data.email}${name ? ` (${name})` : ''}`);
-      console.log(`ID: ${data.id}`);
-      console.log(`Created: ${data.created_at}`);
-      console.log(`Unsubscribed: ${data.unsubscribed ? 'yes' : 'no'}`);
-      const propEntries = Object.entries(data.properties ?? {});
-      if (propEntries.length > 0) {
-        console.log('Properties:');
-        for (const [key, val] of propEntries) {
-          console.log(`  ${key}: ${val.value}`);
+    await runGet({
+      spinner: { loading: 'Fetching contact...', success: 'Contact fetched', fail: 'Failed to fetch contact' },
+      sdkCall: (resend) => resend.contacts.get(id),
+      onInteractive: (data) => {
+        const name = [data.first_name, data.last_name].filter(Boolean).join(' ');
+        console.log(`\n${data.email}${name ? ` (${name})` : ''}`);
+        console.log(`ID: ${data.id}`);
+        console.log(`Created: ${data.created_at}`);
+        console.log(`Unsubscribed: ${data.unsubscribed ? 'yes' : 'no'}`);
+        const propEntries = Object.entries(data.properties ?? {});
+        if (propEntries.length > 0) {
+          console.log('Properties:');
+          for (const [key, val] of propEntries) {
+            console.log(`  ${key}: ${val.value}`);
+          }
         }
-      }
-    } else {
-      outputResult(data, { json: globalOpts.json });
-    }
+      },
+    }, globalOpts);
   });

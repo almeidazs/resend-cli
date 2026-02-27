@@ -1,9 +1,6 @@
 import { Command } from '@commander-js/extra-typings';
 import type { GlobalOpts } from '../../lib/client';
-import { requireClient } from '../../lib/client';
-import { withSpinner } from '../../lib/spinner';
-import { outputResult } from '../../lib/output';
-import { isInteractive } from '../../lib/tty';
+import { runGet } from '../../lib/actions';
 import { buildHelpText } from '../../lib/help-text';
 import { renderDnsRecordsTable, statusIndicator } from './utils';
 
@@ -24,26 +21,18 @@ export const getDomainCommand = new Command('get')
   )
   .action(async (id, _opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
-
-    const resend = requireClient(globalOpts);
-
-    const d = await withSpinner(
-      { loading: 'Fetching domain...', success: 'Domain fetched', fail: 'Failed to fetch domain' },
-      () => resend.domains.get(id),
-      'fetch_error',
-      globalOpts,
-    );
-
-    if (!globalOpts.json && isInteractive()) {
-      console.log(`\n${d.name} — ${statusIndicator(d.status)}`);
-      console.log(`ID: ${d.id}`);
-      console.log(`Region: ${d.region}`);
-      console.log(`Created: ${d.created_at}`);
-      if (d.records.length > 0) {
-        console.log('\nDNS Records:');
-        console.log(renderDnsRecordsTable(d.records, d.name));
-      }
-    } else {
-      outputResult(d, { json: globalOpts.json });
-    }
+    await runGet({
+      spinner: { loading: 'Fetching domain...', success: 'Domain fetched', fail: 'Failed to fetch domain' },
+      sdkCall: (resend) => resend.domains.get(id),
+      onInteractive: (d) => {
+        console.log(`\n${d.name} — ${statusIndicator(d.status)}`);
+        console.log(`ID: ${d.id}`);
+        console.log(`Region: ${d.region}`);
+        console.log(`Created: ${d.created_at}`);
+        if (d.records.length > 0) {
+          console.log('\nDNS Records:');
+          console.log(renderDnsRecordsTable(d.records, d.name));
+        }
+      },
+    }, globalOpts);
   });

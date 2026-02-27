@@ -8,11 +8,11 @@ import { broadcastsCommand } from './commands/broadcasts/index';
 import { contactsCommand } from './commands/contacts/index';
 import { contactPropertiesCommand } from './commands/contact-properties/index';
 import { segmentsCommand } from './commands/segments/index';
-import { audiencesCommand } from './commands/audiences/index';
 import { topicsCommand } from './commands/topics/index';
 import { webhooksCommand } from './commands/webhooks/index';
 import { doctorCommand } from './commands/doctor';
 import { setupCommand } from './commands/setup/index';
+import { skillsCommand } from './commands/skills/index';
 import { VERSION, PACKAGE_NAME } from './lib/version';
 
 const program = new Command()
@@ -44,10 +44,10 @@ Examples:
   .addCommand(contactsCommand)
   .addCommand(contactPropertiesCommand)
   .addCommand(segmentsCommand)
-  .addCommand(audiencesCommand)
   .addCommand(topicsCommand)
   .addCommand(webhooksCommand)
   .addCommand(doctorCommand)
-  .addCommand(setupCommand);
+  .addCommand(setupCommand)
+  .addCommand(skillsCommand);
 
 program.parse();

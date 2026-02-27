@@ -1,10 +1,9 @@
 import { Command } from '@commander-js/extra-typings';
 import * as p from '@clack/prompts';
 import type { GlobalOpts } from '../../lib/client';
-import { requireClient } from '../../lib/client';
+import { runCreate } from '../../lib/actions';
 import { cancelAndExit } from '../../lib/prompts';
-import { withSpinner } from '../../lib/spinner';
-import { outputError, outputResult } from '../../lib/output';
+import { outputError } from '../../lib/output';
 import { isInteractive } from '../../lib/tty';
 import { buildHelpText } from '../../lib/help-text';
 import { parsePropertiesJson } from './utils';
@@ -43,7 +42,6 @@ Unsubscribed: setting --unsubscribed is a team-wide opt-out from all broadcasts,
   )
   .action(async (opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
-    const resend = requireClient(globalOpts);
 
     let email = opts.email;
 
@@ -78,9 +76,9 @@ Unsubscribed: setting --unsubscribed is a team-wide opt-out from all broadcasts,
     const properties = parsePropertiesJson(opts.properties, globalOpts);
     const segments = opts.segmentId ?? [];
 
-    const data = await withSpinner(
-      { loading: 'Creating contact...', success: 'Contact created', fail: 'Failed to create contact' },
-      () => resend.contacts.create({
+    await runCreate({
+      spinner: { loading: 'Creating contact...', success: 'Contact created', fail: 'Failed to create contact' },
+      sdkCall: (resend) => resend.contacts.create({
         email: email!,
         ...(firstName && { firstName }),
         ...(lastName && { lastName }),
@@ -88,13 +86,8 @@ Unsubscribed: setting --unsubscribed is a team-wide opt-out from all broadcasts,
         ...(properties && { properties }),
         ...(segments.length > 0 && { segments: segments.map((id) => ({ id })) }),
       }),
-      'create_error',
-      globalOpts,
-    );
-
-    if (!globalOpts.json && isInteractive()) {
-      console.log(`\nContact created: ${data.id}`);
-    } else {
-      outputResult(data, { json: globalOpts.json });
-    }
+      onInteractive: (data) => {
+        console.log(`\nContact created: ${data.id}`);
+      },
+    }, globalOpts);
   });

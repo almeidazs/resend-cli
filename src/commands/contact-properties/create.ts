@@ -2,10 +2,9 @@ import { Command, Option } from '@commander-js/extra-typings';
 import * as p from '@clack/prompts';
 import type { CreateContactPropertyOptions } from 'resend';
 import type { GlobalOpts } from '../../lib/client';
-import { requireClient } from '../../lib/client';
+import { runCreate } from '../../lib/actions';
 import { cancelAndExit } from '../../lib/prompts';
-import { withSpinner } from '../../lib/spinner';
-import { outputError, outputResult } from '../../lib/output';
+import { outputError } from '../../lib/output';
 import { isInteractive } from '../../lib/tty';
 import { buildHelpText } from '../../lib/help-text';
 
@@ -38,7 +37,6 @@ built-in contact fields and may cause unexpected behavior in broadcasts.`,
   )
   .action(async (opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
-    const resend = requireClient(globalOpts);
 
     let key = opts.key;
     let type = opts.type;
@@ -93,16 +91,11 @@ built-in contact fields and may cause unexpected behavior in broadcasts.`,
       ...(fallbackValue !== undefined && { fallbackValue }),
     } as CreateContactPropertyOptions;
 
-    const data = await withSpinner(
-      { loading: 'Creating contact property...', success: 'Contact property created', fail: 'Failed to create contact property' },
-      () => resend.contactProperties.create(payload),
-      'create_error',
-      globalOpts,
-    );
-
-    if (!globalOpts.json && isInteractive()) {
-      console.log(`\nContact property created: ${data.id}`);
-    } else {
-      outputResult(data, { json: globalOpts.json });
-    }
+    await runCreate({
+      spinner: { loading: 'Creating contact property...', success: 'Contact property created', fail: 'Failed to create contact property' },
+      sdkCall: (resend) => resend.contactProperties.create(payload),
+      onInteractive: (data) => {
+        console.log(`\nContact property created: ${data.id}`);
+      },
+    }, globalOpts);
   });

@@ -1,9 +1,6 @@
 import { Command } from '@commander-js/extra-typings';
 import type { GlobalOpts } from '../../lib/client';
-import { requireClient } from '../../lib/client';
-import { withSpinner } from '../../lib/spinner';
-import { outputResult } from '../../lib/output';
-import { isInteractive } from '../../lib/tty';
+import { runGet } from '../../lib/actions';
 import { buildHelpText } from '../../lib/help-text';
 
 export const getContactPropertyCommand = new Command('get')
@@ -29,21 +26,14 @@ export const getContactPropertyCommand = new Command('get')
   )
   .action(async (id, _opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
-    const resend = requireClient(globalOpts);
-
-    const data = await withSpinner(
-      { loading: 'Fetching contact property...', success: 'Contact property fetched', fail: 'Failed to fetch contact property' },
-      () => resend.contactProperties.get(id),
-      'fetch_error',
-      globalOpts,
-    );
-
-    if (!globalOpts.json && isInteractive()) {
-      console.log(`\n${data.key} (${data.type})`);
-      console.log(`ID: ${data.id}`);
-      console.log(`Created: ${data.createdAt}`);
-      console.log(`Fallback value: ${data.fallbackValue ?? '(none)'}`);
-    } else {
-      outputResult(data, { json: globalOpts.json });
-    }
+    await runGet({
+      spinner: { loading: 'Fetching contact property...', success: 'Contact property fetched', fail: 'Failed to fetch contact property' },
+      sdkCall: (resend) => resend.contactProperties.get(id),
+      onInteractive: (data) => {
+        console.log(`\n${data.key} (${data.type})`);
+        console.log(`ID: ${data.id}`);
+        console.log(`Created: ${data.createdAt}`);
+        console.log(`Fallback value: ${data.fallbackValue ?? '(none)'}`);
+      },
+    }, globalOpts);
   });

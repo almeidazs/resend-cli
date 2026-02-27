@@ -1,10 +1,9 @@
 import { Command } from '@commander-js/extra-typings';
 import * as p from '@clack/prompts';
 import type { GlobalOpts } from '../../lib/client';
-import { requireClient } from '../../lib/client';
+import { runCreate } from '../../lib/actions';
 import { cancelAndExit } from '../../lib/prompts';
-import { withSpinner } from '../../lib/spinner';
-import { outputError, outputResult } from '../../lib/output';
+import { outputError } from '../../lib/output';
 import { isInteractive } from '../../lib/tty';
 import { buildHelpText } from '../../lib/help-text';
 
@@ -28,7 +27,6 @@ Non-interactive: --name is required.`,
   )
   .action(async (opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
-    const resend = requireClient(globalOpts);
 
     let name = opts.name;
 
@@ -45,17 +43,12 @@ Non-interactive: --name is required.`,
       name = result;
     }
 
-    const data = await withSpinner(
-      { loading: 'Creating segment...', success: 'Segment created', fail: 'Failed to create segment' },
-      () => resend.segments.create({ name: name! }),
-      'create_error',
-      globalOpts,
-    );
-
-    if (!globalOpts.json && isInteractive()) {
-      console.log(`\nSegment created: ${data.id}`);
-      console.log(`Name: ${data.name}`);
-    } else {
-      outputResult(data, { json: globalOpts.json });
-    }
+    await runCreate({
+      spinner: { loading: 'Creating segment...', success: 'Segment created', fail: 'Failed to create segment' },
+      sdkCall: (resend) => resend.segments.create({ name: name! }),
+      onInteractive: (data) => {
+        console.log(`\nSegment created: ${data.id}`);
+        console.log(`Name: ${data.name}`);
+      },
+    }, globalOpts);
   });

@@ -1,10 +1,9 @@
 import { Command, Option } from '@commander-js/extra-typings';
 import * as p from '@clack/prompts';
 import type { GlobalOpts } from '../../lib/client';
-import { requireClient } from '../../lib/client';
+import { runCreate } from '../../lib/actions';
 import { cancelAndExit } from '../../lib/prompts';
-import { withSpinner } from '../../lib/spinner';
-import { outputError, outputResult } from '../../lib/output';
+import { outputError } from '../../lib/output';
 import { isInteractive } from '../../lib/tty';
 import { buildHelpText } from '../../lib/help-text';
 
@@ -40,8 +39,6 @@ Permissions:
   .action(async (opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
 
-    const resend = requireClient(globalOpts);
-
     let name = opts.name;
     let permission = opts.permission;
 
@@ -73,24 +70,19 @@ Permissions:
       permission = permissionResult;
     }
 
-    const d = await withSpinner(
-      { loading: 'Creating API key...', success: 'API key created', fail: 'Failed to create API key' },
-      () => resend.apiKeys.create({
+    await runCreate({
+      spinner: { loading: 'Creating API key...', success: 'API key created', fail: 'Failed to create API key' },
+      sdkCall: (resend) => resend.apiKeys.create({
         name,
         ...(permission && { permission }),
         ...(opts.domainId && { domain_id: opts.domainId }),
       }),
-      'create_error',
-      globalOpts,
-    );
-
-    if (!globalOpts.json && isInteractive()) {
-      console.log('\nAPI key created!\n');
-      console.log(`  Name:    ${name}`);
-      console.log(`  ID:      ${d.id}`);
-      console.log(`  Token:   ${d.token}`);
-      console.log('\n⚠  Store this token now — it cannot be retrieved again.');
-    } else {
-      outputResult(d, { json: globalOpts.json });
-    }
+      onInteractive: (d) => {
+        console.log('\nAPI key created!\n');
+        console.log(`  Name:    ${name}`);
+        console.log(`  ID:      ${d.id}`);
+        console.log(`  Token:   ${d.token}`);
+        console.log('\n⚠  Store this token now — it cannot be retrieved again.');
+      },
+    }, globalOpts);
   });
