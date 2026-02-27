@@ -1,6 +1,6 @@
 {
   "name": "@resend/cli",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "Resend CLI — email for developers",
   "license": "MIT",
   "repository": {
@@ -8,7 +8,12 @@
     "url": "https://github.com/resend/resend-cli"
   },
   "homepage": "https://github.com/resend/resend-cli#readme",
-  "keywords": ["cli", "resend", "email", "api"],
+  "keywords": [
+    "cli",
+    "resend",
+    "email",
+    "api"
+  ],
   "type": "module",
   "bin": {
     "resend": "./src/cli.ts"
