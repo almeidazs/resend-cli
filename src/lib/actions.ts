@@ -6,6 +6,30 @@ import { withSpinner } from './spinner';
 import { outputResult } from './output';
 import { isInteractive } from './tty';
 
+type SdkCall<T> = (resend: Resend) => Promise<{ data: T | null; error: { message: string } | null }>;
+type SpinnerMessages = { loading: string; success: string; fail: string };
+
+/**
+ * Shared pattern for all get commands:
+ *   requireClient → withSpinner(fetch_error) → if/else output
+ */
+export async function runGet<T>(
+  config: {
+    spinner: SpinnerMessages;
+    sdkCall: SdkCall<T>;
+    onInteractive: (data: T) => void;
+  },
+  globalOpts: GlobalOpts,
+): Promise<void> {
+  const resend = requireClient(globalOpts);
+  const data = await withSpinner(config.spinner, () => config.sdkCall(resend), 'fetch_error', globalOpts);
+  if (!globalOpts.json && isInteractive()) {
+    config.onInteractive(data);
+  } else {
+    outputResult(data, { json: globalOpts.json });
+  }
+}
+
 /**
  * Shared pattern for all delete commands:
  *   requireClient → confirmDelete (if needed) → withSpinner → if/else output
@@ -15,10 +39,10 @@ export async function runDelete(
   skipConfirm: boolean,
   config: {
     confirmMessage: string;
-    spinner: { loading: string; success: string; fail: string };
+    spinner: SpinnerMessages;
     object: string;
     successMsg: string;
-    sdkCall: (resend: Resend) => Promise<{ data: unknown; error: { message: string } | null }>;
+    sdkCall: SdkCall<unknown>;
   },
   globalOpts: GlobalOpts,
 ): Promise<void> {
@@ -41,8 +65,8 @@ export async function runDelete(
  */
 export async function runList<T>(
   config: {
-    spinner: { loading: string; success: string; fail: string };
-    sdkCall: (resend: Resend) => Promise<{ data: T | null; error: { message: string } | null }>;
+    spinner: SpinnerMessages;
+    sdkCall: SdkCall<T>;
     onInteractive: (result: T) => void;
   },
   globalOpts: GlobalOpts,

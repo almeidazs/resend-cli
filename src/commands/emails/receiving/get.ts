@@ -1,9 +1,6 @@
 import { Command } from '@commander-js/extra-typings';
 import type { GlobalOpts } from '../../../lib/client';
-import { requireClient } from '../../../lib/client';
-import { withSpinner } from '../../../lib/spinner';
-import { outputResult } from '../../../lib/output';
-import { isInteractive } from '../../../lib/tty';
+import { runGet } from '../../../lib/actions';
 import { buildHelpText } from '../../../lib/help-text';
 
 export const getReceivingCommand = new Command('get')
@@ -25,30 +22,23 @@ export const getReceivingCommand = new Command('get')
   )
   .action(async (id, _opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
-    const resend = requireClient(globalOpts);
-
-    const data = await withSpinner(
-      { loading: 'Fetching received email...', success: 'Received email fetched', fail: 'Failed to fetch received email' },
-      () => resend.emails.receiving.get(id),
-      'fetch_error',
-      globalOpts,
-    );
-
-    if (!globalOpts.json && isInteractive()) {
-      console.log(`\nFrom:    ${data.from}`);
-      console.log(`To:      ${data.to.join(', ')}`);
-      console.log(`Subject: ${data.subject}`);
-      console.log(`Date:    ${data.created_at}`);
-      if (data.attachments.length > 0) {
-        console.log(`Files:   ${data.attachments.length} attachment(s)`);
-      }
-      if (data.text) {
-        const snippet = data.text.length > 200 ? `${data.text.slice(0, 197)}...` : data.text;
-        console.log(`\n${snippet}`);
-      } else if (data.html) {
-        console.log('\n(HTML body only — use --json to view or pipe to a browser)');
-      }
-    } else {
-      outputResult(data, { json: globalOpts.json });
-    }
+    await runGet({
+      spinner: { loading: 'Fetching received email...', success: 'Received email fetched', fail: 'Failed to fetch received email' },
+      sdkCall: (resend) => resend.emails.receiving.get(id),
+      onInteractive: (data) => {
+        console.log(`\nFrom:    ${data.from}`);
+        console.log(`To:      ${data.to.join(', ')}`);
+        console.log(`Subject: ${data.subject}`);
+        console.log(`Date:    ${data.created_at}`);
+        if (data.attachments.length > 0) {
+          console.log(`Files:   ${data.attachments.length} attachment(s)`);
+        }
+        if (data.text) {
+          const snippet = data.text.length > 200 ? `${data.text.slice(0, 197)}...` : data.text;
+          console.log(`\n${snippet}`);
+        } else if (data.html) {
+          console.log('\n(HTML body only — use --json to view or pipe to a browser)');
+        }
+      },
+    }, globalOpts);
   });
