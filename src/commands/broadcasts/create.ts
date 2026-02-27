@@ -2,10 +2,9 @@ import { Command } from '@commander-js/extra-typings';
 import type { CreateBroadcastOptions } from 'resend';
 import * as p from '@clack/prompts';
 import type { GlobalOpts } from '../../lib/client';
-import { requireClient } from '../../lib/client';
+import { runCreate } from '../../lib/actions';
 import { cancelAndExit } from '../../lib/prompts';
-import { withSpinner } from '../../lib/spinner';
-import { outputError, outputResult } from '../../lib/output';
+import { outputError } from '../../lib/output';
 import { readFile } from '../../lib/files';
 import { isInteractive } from '../../lib/tty';
 import { buildHelpText } from '../../lib/help-text';
@@ -50,7 +49,6 @@ Scheduling:
   )
   .action(async (opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
-    const resend = requireClient(globalOpts);
 
     let from = opts.from;
     let subject = opts.subject;
@@ -102,13 +100,13 @@ Scheduling:
       text = result;
     }
 
-    const data = await withSpinner(
-      {
+    await runCreate({
+      spinner: {
         loading: 'Creating broadcast...',
         success: opts.send ? 'Broadcast sent' : 'Broadcast created',
         fail: 'Failed to create broadcast',
       },
-      () => resend.broadcasts.create({
+      sdkCall: (resend) => resend.broadcasts.create({
         from,
         subject,
         segmentId,
@@ -121,20 +119,14 @@ Scheduling:
         ...(opts.send && { send: true as const }),
         ...(opts.send && opts.scheduledAt && { scheduledAt: opts.scheduledAt }),
       } as CreateBroadcastOptions),
-      'create_error',
-      globalOpts,
-    );
-
-    if (!globalOpts.json && isInteractive()) {
-      const d = data;
-      if (opts.send) {
-        console.log(`\nBroadcast sent: ${d.id}`);
-      } else {
-        console.log(`\nBroadcast created: ${d.id}`);
-        console.log('Status: draft');
-        console.log(`\nSend it with: resend broadcasts send ${d.id}`);
-      }
-    } else {
-      outputResult(data, { json: globalOpts.json });
-    }
+      onInteractive: (d) => {
+        if (opts.send) {
+          console.log(`\nBroadcast sent: ${d.id}`);
+        } else {
+          console.log(`\nBroadcast created: ${d.id}`);
+          console.log('Status: draft');
+          console.log(`\nSend it with: resend broadcasts send ${d.id}`);
+        }
+      },
+    }, globalOpts);
   });

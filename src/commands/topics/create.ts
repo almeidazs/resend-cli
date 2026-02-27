@@ -1,10 +1,9 @@
 import { Command, Option } from '@commander-js/extra-typings';
 import * as p from '@clack/prompts';
 import type { GlobalOpts } from '../../lib/client';
-import { requireClient } from '../../lib/client';
+import { runCreate } from '../../lib/actions';
 import { cancelAndExit } from '../../lib/prompts';
-import { withSpinner } from '../../lib/spinner';
-import { outputError, outputResult } from '../../lib/output';
+import { outputError } from '../../lib/output';
 import { isInteractive } from '../../lib/tty';
 import { buildHelpText } from '../../lib/help-text';
 
@@ -41,7 +40,6 @@ Non-interactive: --name is required.`,
   )
   .action(async (opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
-    const resend = requireClient(globalOpts);
 
     let name = opts.name;
 
@@ -58,20 +56,15 @@ Non-interactive: --name is required.`,
       name = result;
     }
 
-    const data = await withSpinner(
-      { loading: 'Creating topic...', success: 'Topic created', fail: 'Failed to create topic' },
-      () => resend.topics.create({
+    await runCreate({
+      spinner: { loading: 'Creating topic...', success: 'Topic created', fail: 'Failed to create topic' },
+      sdkCall: (resend) => resend.topics.create({
         name: name!,
         defaultSubscription: opts.defaultSubscription,
         ...(opts.description && { description: opts.description }),
       }),
-      'create_error',
-      globalOpts,
-    );
-
-    if (!globalOpts.json && isInteractive()) {
-      console.log(`\nTopic created: ${data.id}`);
-    } else {
-      outputResult(data, { json: globalOpts.json });
-    }
+      onInteractive: (data) => {
+        console.log(`\nTopic created: ${data.id}`);
+      },
+    }, globalOpts);
   });

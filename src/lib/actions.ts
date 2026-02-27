@@ -57,6 +57,27 @@ export async function runDelete(
 }
 
 /**
+ * Shared pattern for create commands:
+ *   requireClient → withSpinner('create_error') → if/else output
+ */
+export async function runCreate<T>(
+  config: {
+    spinner: SpinnerMessages;
+    sdkCall: SdkCall<T>;
+    onInteractive: (data: T) => void;
+  },
+  globalOpts: GlobalOpts,
+): Promise<void> {
+  const resend = requireClient(globalOpts);
+  const data = await withSpinner(config.spinner, () => config.sdkCall(resend), 'create_error', globalOpts);
+  if (!globalOpts.json && isInteractive()) {
+    config.onInteractive(data);
+  } else {
+    outputResult(data, { json: globalOpts.json });
+  }
+}
+
+/**
  * Shared pattern for write commands (update/verify/remove-segment) where
  * interactive output is a single status message:
  *   requireClient → withSpinner(errorCode) → if/else output

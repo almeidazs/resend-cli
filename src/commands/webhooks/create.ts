@@ -2,10 +2,9 @@ import { Command } from '@commander-js/extra-typings';
 import * as p from '@clack/prompts';
 import type { WebhookEvent } from 'resend';
 import type { GlobalOpts } from '../../lib/client';
-import { requireClient } from '../../lib/client';
+import { runCreate } from '../../lib/actions';
 import { cancelAndExit } from '../../lib/prompts';
-import { withSpinner } from '../../lib/spinner';
-import { outputError, outputResult } from '../../lib/output';
+import { outputError } from '../../lib/output';
 import { isInteractive } from '../../lib/tty';
 import { buildHelpText } from '../../lib/help-text';
 import { ALL_WEBHOOK_EVENTS } from './utils';
@@ -49,7 +48,6 @@ Non-interactive: --endpoint and --events are required.`,
   )
   .action(async (opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
-    const resend = requireClient(globalOpts);
 
     let endpoint = opts.endpoint;
 
@@ -88,22 +86,17 @@ Non-interactive: --endpoint and --events are required.`,
       selectedEvents = result;
     }
 
-    const d = await withSpinner(
-      { loading: 'Creating webhook...', success: 'Webhook created', fail: 'Failed to create webhook' },
-      () => resend.webhooks.create({
+    await runCreate({
+      spinner: { loading: 'Creating webhook...', success: 'Webhook created', fail: 'Failed to create webhook' },
+      sdkCall: (resend) => resend.webhooks.create({
         endpoint: endpoint!,
         events: selectedEvents,
       }),
-      'create_error',
-      globalOpts,
-    );
-
-    if (!globalOpts.json && isInteractive()) {
-      console.log(`\nWebhook created`);
-      console.log(`ID:             ${d.id}`);
-      console.log(`Signing Secret: ${d.signing_secret}`);
-      console.log(`\nSave the signing secret — it is only shown once.`);
-    } else {
-      outputResult(d, { json: globalOpts.json });
-    }
+      onInteractive: (d) => {
+        console.log(`\nWebhook created`);
+        console.log(`ID:             ${d.id}`);
+        console.log(`Signing Secret: ${d.signing_secret}`);
+        console.log(`\nSave the signing secret — it is only shown once.`);
+      },
+    }, globalOpts);
   });
