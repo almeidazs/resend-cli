@@ -21,7 +21,12 @@
   "scripts": {
     "dev": "bun run src/cli.ts",
     "dev:watch": "bun --watch src/cli.ts",
-    "build": "bun build --compile --minify --sourcemap --bytecode src/cli.ts --outfile dist/resend"
+    "build": "bun build --compile --minify --sourcemap --bytecode src/cli.ts --outfile dist/resend",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "typecheck": "tsc -p tsconfig.check.json",
+    "test": "bun test tests/commands tests/lib"
   },
   "dependencies": {
     "commander": "^14.0.0",
@@ -31,6 +36,7 @@
     "unicode-animations": "latest"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.6",
     "@types/bun": "latest",
     "typescript": "^5.5.0"
   }
