@@ -3,7 +3,12 @@ import { join } from 'node:path';
 import * as p from '@clack/prompts';
 import { Command } from '@commander-js/extra-typings';
 import type { GlobalOpts } from '../../lib/client';
-import { getConfigDir, removeApiKey, resolveTeamName } from '../../lib/config';
+import {
+  getConfigDir,
+  removeAllApiKeys,
+  removeApiKey,
+  resolveTeamName,
+} from '../../lib/config';
 import { buildHelpText } from '../../lib/help-text';
 import { errorMessage, outputError, outputResult } from '../../lib/output';
 import { cancelAndExit } from '../../lib/prompts';
@@ -22,7 +27,7 @@ export const logoutCommand = new Command('logout')
   (Windows: %APPDATA%\\resend\\credentials.json)
 
 When --team is specified, only that team's entry is removed.
-When no team is specified, the active team's entry is removed.
+When no team is specified, all teams are removed.
 
 If no credentials file exists, exits cleanly with no error.`,
       output: `  {"success":true,"config_path":"<path>"}`,
@@ -51,13 +56,15 @@ If no credentials file exists, exits cleanly with no error.`,
       return;
     }
 
-    const teamName = globalOpts.team || resolveTeamName();
-    const teamLabel = teamName;
+    const logoutAll = !globalOpts.team;
+    const teamLabel = globalOpts.team || resolveTeamName();
 
     if (!globalOpts.json && isInteractive()) {
-      const confirmed = await p.confirm({
-        message: `Remove saved API key for team '${teamLabel}' at ${configPath}?`,
-      });
+      const message = logoutAll
+        ? `Remove all saved API keys at ${configPath}?`
+        : `Remove saved API key for team '${teamLabel}'?`;
+
+      const confirmed = await p.confirm({ message });
 
       if (p.isCancel(confirmed) || !confirmed) {
         cancelAndExit('Logout cancelled.');
@@ -65,7 +72,11 @@ If no credentials file exists, exits cleanly with no error.`,
     }
 
     try {
-      removeApiKey(teamName);
+      if (logoutAll) {
+        removeAllApiKeys();
+      } else {
+        removeApiKey(teamLabel);
+      }
     } catch (err) {
       outputError(
         {
@@ -77,10 +88,17 @@ If no credentials file exists, exits cleanly with no error.`,
     }
 
     if (!globalOpts.json && isInteractive()) {
-      p.outro(`Logged out. API key removed for team '${teamLabel}'.`);
+      const msg = logoutAll
+        ? 'Logged out. All API keys removed.'
+        : `Logged out. API key removed for team '${teamLabel}'.`;
+      p.outro(msg);
     } else {
       outputResult(
-        { success: true, config_path: configPath, team: teamLabel },
+        {
+          success: true,
+          config_path: configPath,
+          team: logoutAll ? 'all' : teamLabel,
+        },
         { json: globalOpts.json },
       );
     }

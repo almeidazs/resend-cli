@@ -114,6 +114,13 @@ export function storeApiKey(apiKey: string, teamName?: string): string {
   return writeCredentials(creds);
 }
 
+export function removeAllApiKeys(): string {
+  const configPath = getCredentialsPath();
+  const { unlinkSync } = require('node:fs');
+  unlinkSync(configPath);
+  return configPath;
+}
+
 export function removeApiKey(teamName?: string): string {
   const creds = readCredentials();
   if (!creds) {
