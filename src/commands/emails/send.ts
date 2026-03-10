@@ -6,7 +6,7 @@ import { requireClient } from '../../lib/client';
 import { readFile } from '../../lib/files';
 import { buildHelpText } from '../../lib/help-text';
 import { outputError, outputResult } from '../../lib/output';
-import { cancelAndExit, promptForMissing } from '../../lib/prompts';
+import { cancelAndExit, promptForMissing, requireText } from '../../lib/prompts';
 import { withSpinner } from '../../lib/spinner';
 import { isInteractive } from '../../lib/tty';
 
@@ -142,29 +142,15 @@ export const sendCommand = new Command('send')
 
     let body: string | undefined = text;
     if (!html && !text) {
-      if (!isInteractive()) {
-        outputError(
-          {
-            message:
-              'Missing email body. Provide --html, --html-file, or --text',
-            code: 'missing_body',
-          },
-          { json: globalOpts.json },
-        );
-      }
-      const bodyResult = await p.text({
-        message: 'Email body (plain text)',
-        placeholder: 'Type your message...',
-        validate: (v) =>
-          !v || v.length === 0 ? 'Body is required' : undefined,
-      });
-      if (p.isCancel(bodyResult)) {
-        cancelAndExit('Send cancelled.');
-      }
-      body = bodyResult;
+      body = await requireText(
+        undefined,
+        { message: 'Email body (plain text)', placeholder: 'Type your message...' },
+        { message: 'Missing email body. Provide --html, --html-file, or --text', code: 'missing_body' },
+        globalOpts,
+      );
     }
 
-    const toAddresses = opts.to ?? [filled.to!];
+    const toAddresses = opts.to ?? [filled.to];
 
     const data = await withSpinner(
       {
@@ -174,10 +160,10 @@ export const sendCommand = new Command('send')
       },
       () =>
         resend.emails.send({
-          from: filled.from!,
+          from: filled.from,
           to: toAddresses,
-          subject: filled.subject!,
-          ...(html ? { html } : { text: body! }),
+          subject: filled.subject,
+          ...(html ? { html } : { text: body as string }),
           ...(opts.cc && { cc: opts.cc }),
           ...(opts.bcc && { bcc: opts.bcc }),
           ...(opts.replyTo && { replyTo: opts.replyTo }),

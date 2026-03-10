@@ -46,7 +46,7 @@ describe('readFile', () => {
       readFile('/nonexistent/path/data.txt', globalOpts),
     );
 
-    const output = errorSpy!.mock.calls.map((c) => c[0]).join(' ');
+    const output = errorSpy?.mock.calls.map((c) => c[0]).join(' ');
     expect(output).toContain('file_read_error');
   });
 
@@ -57,7 +57,7 @@ describe('readFile', () => {
     const { readFile } = require('../../src/lib/files');
     await expectExit1(async () => readFile('/nonexistent/file.txt', jsonOpts));
 
-    const raw = errorSpy!.mock.calls.map((c) => c[0]).join(' ');
+    const raw = errorSpy?.mock.calls.map((c) => c[0]).join(' ');
     const parsed = JSON.parse(raw);
     expect(parsed.error.code).toBe('file_read_error');
     expect(parsed.error.message).toContain('Failed to read file:');

@@ -84,7 +84,8 @@ describe('login command', () => {
     const { loginCommand } = await import('../../../src/commands/auth/login');
     await expectExit1(() => loginCommand.parseAsync([], { from: 'user' }));
 
-    const output = errorSpy!.mock.calls[0][0] as string;
+    expect(errorSpy).toBeDefined();
+    const output = errorSpy?.mock.calls[0][0] as string;
     expect(output).toContain('missing_key');
   });
 });

@@ -1,11 +1,8 @@
-import * as p from '@clack/prompts';
 import { Command, Option } from '@commander-js/extra-typings';
 import { runCreate } from '../../lib/actions';
 import type { GlobalOpts } from '../../lib/client';
 import { buildHelpText } from '../../lib/help-text';
-import { outputError } from '../../lib/output';
-import { cancelAndExit } from '../../lib/prompts';
-import { isInteractive } from '../../lib/tty';
+import { requireText } from '../../lib/prompts';
 
 export const createTopicCommand = new Command('create')
   .description('Create a new topic for subscription management')
@@ -47,25 +44,12 @@ Non-interactive: --name is required.`,
   .action(async (opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
 
-    let name = opts.name;
-
-    if (!name) {
-      if (!isInteractive()) {
-        outputError(
-          { message: 'Missing --name flag.', code: 'missing_name' },
-          { json: globalOpts.json },
-        );
-      }
-      const result = await p.text({
-        message: 'Topic name',
-        placeholder: 'Product Updates',
-        validate: (v) => (!v ? 'Name is required' : undefined),
-      });
-      if (p.isCancel(result)) {
-        cancelAndExit('Cancelled.');
-      }
-      name = result;
-    }
+    const name = await requireText(
+      opts.name,
+      { message: 'Topic name', placeholder: 'Product Updates' },
+      { message: 'Missing --name flag.', code: 'missing_name' },
+      globalOpts,
+    );
 
     await runCreate(
       {
@@ -76,7 +60,7 @@ Non-interactive: --name is required.`,
         },
         sdkCall: (resend) =>
           resend.topics.create({
-            name: name!,
+            name,
             defaultSubscription: opts.defaultSubscription,
             ...(opts.description && { description: opts.description }),
           }),

@@ -1,4 +1,3 @@
-import * as p from '@clack/prompts';
 import { Command } from '@commander-js/extra-typings';
 import type { CreateBatchOptions } from 'resend';
 import type { GlobalOpts } from '../../lib/client';
@@ -6,7 +5,7 @@ import { requireClient } from '../../lib/client';
 import { readFile } from '../../lib/files';
 import { buildHelpText } from '../../lib/help-text';
 import { outputError, outputResult } from '../../lib/output';
-import { cancelAndExit } from '../../lib/prompts';
+import { requireText } from '../../lib/prompts';
 import { withSpinner } from '../../lib/spinner';
 import { isInteractive } from '../../lib/tty';
 
@@ -47,32 +46,14 @@ export const batchCommand = new Command('batch')
 
     const resend = requireClient(globalOpts);
 
-    let filePath = opts.file;
+    const filePath = await requireText(
+      opts.file,
+      { message: 'Path to JSON file', placeholder: './emails.json' },
+      { message: 'Missing --file flag. Provide a JSON file with an array of email objects.', code: 'missing_file' },
+      globalOpts,
+    );
 
-    if (!filePath) {
-      if (!isInteractive()) {
-        outputError(
-          {
-            message:
-              'Missing --file flag. Provide a JSON file with an array of email objects.',
-            code: 'missing_file',
-          },
-          { json: globalOpts.json },
-        );
-      }
-
-      const result = await p.text({
-        message: 'Path to JSON file',
-        placeholder: './emails.json',
-        validate: (v) => (!v ? 'File path is required' : undefined),
-      });
-      if (p.isCancel(result)) {
-        cancelAndExit('Batch cancelled.');
-      }
-      filePath = result;
-    }
-
-    const raw = readFile(filePath!, globalOpts);
+    const raw = readFile(filePath, globalOpts);
 
     let parsed: unknown;
     try {

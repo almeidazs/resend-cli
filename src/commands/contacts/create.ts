@@ -3,8 +3,7 @@ import { Command } from '@commander-js/extra-typings';
 import { runCreate } from '../../lib/actions';
 import type { GlobalOpts } from '../../lib/client';
 import { buildHelpText } from '../../lib/help-text';
-import { outputError } from '../../lib/output';
-import { cancelAndExit } from '../../lib/prompts';
+import { cancelAndExit, requireText } from '../../lib/prompts';
 import { isInteractive } from '../../lib/tty';
 import { parsePropertiesJson } from './utils';
 
@@ -57,25 +56,12 @@ Unsubscribed: setting --unsubscribed is a team-wide opt-out from all broadcasts,
   .action(async (opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
 
-    let email = opts.email;
-
-    if (!email) {
-      if (!isInteractive()) {
-        outputError(
-          { message: 'Missing --email flag.', code: 'missing_email' },
-          { json: globalOpts.json },
-        );
-      }
-      const result = await p.text({
-        message: 'Email address',
-        placeholder: 'user@example.com',
-        validate: (v) => (!v ? 'Required' : undefined),
-      });
-      if (p.isCancel(result)) {
-        cancelAndExit('Cancelled.');
-      }
-      email = result;
-    }
+    const email = await requireText(
+      opts.email,
+      { message: 'Email address', placeholder: 'user@example.com' },
+      { message: 'Missing --email flag.', code: 'missing_email' },
+      globalOpts,
+    );
 
     let firstName = opts.firstName;
     let lastName = opts.lastName;
@@ -118,7 +104,7 @@ Unsubscribed: setting --unsubscribed is a team-wide opt-out from all broadcasts,
         },
         sdkCall: (resend) =>
           resend.contacts.create({
-            email: email!,
+            email,
             ...(firstName && { firstName }),
             ...(lastName && { lastName }),
             ...(opts.unsubscribed && { unsubscribed: true }),

@@ -85,7 +85,8 @@ describe('logout command', () => {
     const { logoutCommand } = await import('../../../src/commands/auth/logout');
     await expectExit1(() => logoutCommand.parseAsync([], { from: 'user' }));
 
-    const output = JSON.parse(errorSpy!.mock.calls[0][0] as string);
+    expect(errorSpy).toBeDefined();
+    const output = JSON.parse(errorSpy?.mock.calls[0][0] as string);
     expect(output.error.code).toBe('remove_failed');
   });
 });

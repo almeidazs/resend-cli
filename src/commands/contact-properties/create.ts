@@ -1,12 +1,10 @@
-import * as p from '@clack/prompts';
 import { Command, Option } from '@commander-js/extra-typings';
 import type { CreateContactPropertyOptions } from 'resend';
 import { runCreate } from '../../lib/actions';
 import type { GlobalOpts } from '../../lib/client';
 import { buildHelpText } from '../../lib/help-text';
 import { outputError } from '../../lib/output';
-import { cancelAndExit } from '../../lib/prompts';
-import { isInteractive } from '../../lib/tty';
+import { requireSelect, requireText } from '../../lib/prompts';
 
 export const createContactPropertyCommand = new Command('create')
   .description('Create a new contact property definition')
@@ -57,46 +55,25 @@ built-in contact fields and may cause unexpected behavior in broadcasts.`,
   .action(async (opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
 
-    let key = opts.key;
-    let type = opts.type;
+    const key = await requireText(
+      opts.key,
+      { message: 'Property key', placeholder: 'company_name' },
+      { message: 'Missing --key flag.', code: 'missing_key' },
+      globalOpts,
+    );
 
-    if (!key) {
-      if (!isInteractive()) {
-        outputError(
-          { message: 'Missing --key flag.', code: 'missing_key' },
-          { json: globalOpts.json },
-        );
-      }
-      const result = await p.text({
-        message: 'Property key',
-        placeholder: 'company_name',
-        validate: (v) => (!v ? 'Key is required' : undefined),
-      });
-      if (p.isCancel(result)) {
-        cancelAndExit('Cancelled.');
-      }
-      key = result;
-    }
-
-    if (!type) {
-      if (!isInteractive()) {
-        outputError(
-          { message: 'Missing --type flag.', code: 'missing_type' },
-          { json: globalOpts.json },
-        );
-      }
-      const result = await p.select({
+    const type = await requireSelect(
+      opts.type,
+      {
         message: 'Property data type',
         options: [
           { value: 'string' as const, label: 'string — text values' },
           { value: 'number' as const, label: 'number — numeric values' },
         ],
-      });
-      if (p.isCancel(result)) {
-        cancelAndExit('Cancelled.');
-      }
-      type = result;
-    }
+      },
+      { message: 'Missing --type flag.', code: 'missing_type' },
+      globalOpts,
+    );
 
     let fallbackValue: string | number | undefined;
     if (opts.fallbackValue !== undefined) {
@@ -119,8 +96,8 @@ built-in contact fields and may cause unexpected behavior in broadcasts.`,
     }
 
     const payload = {
-      key: key!,
-      type: type!,
+      key,
+      type,
       ...(fallbackValue !== undefined && { fallbackValue }),
     } as CreateContactPropertyOptions;
 

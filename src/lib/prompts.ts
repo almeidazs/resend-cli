@@ -41,15 +41,64 @@ export async function confirmDelete(
   }
 }
 
+export async function requireText(
+  value: string | undefined,
+  prompt: { message: string; placeholder?: string; validate?: (value: string | undefined) => string | Error | undefined },
+  error: { message: string; code: string },
+  globalOpts: GlobalOpts,
+): Promise<string> {
+  if (value) {
+    return value;
+  }
+
+  if (!isInteractive()) {
+    outputError(error, { json: globalOpts.json });
+  }
+
+  const result = await p.text({
+    message: prompt.message,
+    placeholder: prompt.placeholder,
+    validate: prompt.validate ?? ((v) => (!v || v.length === 0 ? `${prompt.message} is required` : undefined)),
+  });
+  if (p.isCancel(result)) {
+    cancelAndExit('Cancelled.');
+  }
+  return result;
+}
+
+export async function requireSelect<V extends string>(
+  value: V | undefined,
+  prompt: { message: string; options: Parameters<typeof p.select<V>>[0]['options'] },
+  error: { message: string; code: string },
+  globalOpts: GlobalOpts,
+): Promise<V> {
+  if (value) {
+    return value;
+  }
+
+  if (!isInteractive()) {
+    outputError(error, { json: globalOpts.json });
+  }
+
+  const result = await p.select<V>({
+    message: prompt.message,
+    options: prompt.options,
+  });
+  if (p.isCancel(result)) {
+    cancelAndExit('Cancelled.');
+  }
+  return result;
+}
+
 export async function promptForMissing<
   T extends Record<string, string | undefined>,
->(current: T, fields: FieldSpec[], globalOpts: GlobalOpts): Promise<T> {
+>(current: T, fields: FieldSpec[], globalOpts: GlobalOpts): Promise<{ [K in keyof T]: string }> {
   const missing = fields.filter(
     (f) => f.required !== false && !current[f.flag],
   );
 
   if (missing.length === 0) {
-    return current;
+    return current as { [K in keyof T]: string };
   }
 
   if (!isInteractive()) {
@@ -82,5 +131,5 @@ export async function promptForMissing<
     },
   );
 
-  return { ...current, ...result } as T;
+  return { ...current, ...result } as { [K in keyof T]: string };
 }

@@ -63,7 +63,7 @@ describe('promptForMissing', () => {
       ),
     );
 
-    const allErrors = errorSpy!.mock.calls.map((c) => c[0]).join(' ');
+    const allErrors = errorSpy?.mock.calls.map((c) => c[0]).join(' ');
     expect(allErrors).toContain('--from');
     expect(allErrors).toContain('--subject');
     // --to should NOT be listed since it has a value
@@ -92,7 +92,7 @@ describe('promptForMissing', () => {
       ),
     );
 
-    const allErrors = errorSpy!.mock.calls.map((c) => c[0]).join(' ');
+    const allErrors = errorSpy?.mock.calls.map((c) => c[0]).join(' ');
     expect(allErrors).toContain('missing_flags');
   });
 
@@ -150,7 +150,7 @@ describe('confirmDelete', () => {
       confirmDelete('res_123', 'Delete resource res_123?', { json: false }),
     );
 
-    const output = errorSpy!.mock.calls.map((c) => c[0]).join(' ');
+    const output = errorSpy?.mock.calls.map((c) => c[0]).join(' ');
     expect(output).toContain('confirmation_required');
   });
 
@@ -171,7 +171,7 @@ describe('confirmDelete', () => {
       confirmDelete('res_123', 'Delete?', { json: true }),
     );
 
-    const raw = errorSpy!.mock.calls.map((c) => c[0]).join(' ');
+    const raw = errorSpy?.mock.calls.map((c) => c[0]).join(' ');
     const parsed = JSON.parse(raw);
     expect(parsed.error.code).toBe('confirmation_required');
   });

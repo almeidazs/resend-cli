@@ -1,11 +1,8 @@
-import * as p from '@clack/prompts';
 import { Command, Option } from '@commander-js/extra-typings';
 import { runCreate } from '../../lib/actions';
 import type { GlobalOpts } from '../../lib/client';
 import { buildHelpText } from '../../lib/help-text';
-import { outputError } from '../../lib/output';
-import { cancelAndExit } from '../../lib/prompts';
-import { isInteractive } from '../../lib/tty';
+import { requireText } from '../../lib/prompts';
 import { renderDnsRecordsTable } from './utils';
 
 export const createDomainCommand = new Command('create')
@@ -46,26 +43,12 @@ export const createDomainCommand = new Command('create')
   .action(async (opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
 
-    let name = opts.name;
-
-    if (!name) {
-      if (!isInteractive()) {
-        outputError(
-          { message: 'Missing --name flag.', code: 'missing_name' },
-          { json: globalOpts.json },
-        );
-      }
-
-      const result = await p.text({
-        message: 'Domain name',
-        placeholder: 'example.com',
-        validate: (v) => (!v ? 'Domain name is required' : undefined),
-      });
-      if (p.isCancel(result)) {
-        cancelAndExit('Cancelled.');
-      }
-      name = result;
-    }
+    const name = await requireText(
+      opts.name,
+      { message: 'Domain name', placeholder: 'example.com' },
+      { message: 'Missing --name flag.', code: 'missing_name' },
+      globalOpts,
+    );
 
     await runCreate(
       {
@@ -76,7 +59,7 @@ export const createDomainCommand = new Command('create')
         },
         sdkCall: (resend) =>
           resend.domains.create({
-            name: name!,
+            name,
             ...(opts.region && { region: opts.region }),
             ...(opts.tls && { tls: opts.tls }),
             ...((opts.sending || opts.receiving) && {

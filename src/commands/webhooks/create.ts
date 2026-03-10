@@ -5,7 +5,7 @@ import { runCreate } from '../../lib/actions';
 import type { GlobalOpts } from '../../lib/client';
 import { buildHelpText } from '../../lib/help-text';
 import { outputError } from '../../lib/output';
-import { cancelAndExit } from '../../lib/prompts';
+import { cancelAndExit, requireText } from '../../lib/prompts';
 import { isInteractive } from '../../lib/tty';
 import { ALL_WEBHOOK_EVENTS } from './utils';
 
@@ -62,16 +62,9 @@ Non-interactive: --endpoint and --events are required.`,
   .action(async (opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
 
-    let endpoint = opts.endpoint;
-
-    if (!endpoint) {
-      if (!isInteractive()) {
-        outputError(
-          { message: 'Missing --endpoint flag.', code: 'missing_endpoint' },
-          { json: globalOpts.json },
-        );
-      }
-      const result = await p.text({
+    const endpoint = await requireText(
+      opts.endpoint,
+      {
         message: 'Webhook endpoint URL',
         placeholder: 'https://your-app.com/webhooks/resend',
         validate: (v) => {
@@ -83,12 +76,10 @@ Non-interactive: --endpoint and --events are required.`,
           }
           return undefined;
         },
-      });
-      if (p.isCancel(result)) {
-        cancelAndExit('Cancelled.');
-      }
-      endpoint = result;
-    }
+      },
+      { message: 'Missing --endpoint flag.', code: 'missing_endpoint' },
+      globalOpts,
+    );
 
     let selectedEvents: WebhookEvent[];
 
@@ -122,7 +113,7 @@ Non-interactive: --endpoint and --events are required.`,
         },
         sdkCall: (resend) =>
           resend.webhooks.create({
-            endpoint: endpoint!,
+            endpoint,
             events: selectedEvents,
           }),
         onInteractive: (d) => {

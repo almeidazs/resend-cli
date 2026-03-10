@@ -31,8 +31,15 @@ export async function withSpinner<T>(
         { json: globalOpts.json },
       );
     }
+    if (data === null) {
+      spinner.fail(messages.fail);
+      outputError(
+        { message: 'Unexpected empty response', code: errorCode },
+        { json: globalOpts.json },
+      );
+    }
     spinner.stop(messages.success);
-    return data!;
+    return data;
   } catch (err) {
     spinner.fail(messages.fail);
     return outputError(
