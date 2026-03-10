@@ -64,6 +64,21 @@ describe('teams switch command', () => {
     expect(data.active_team).toBe('staging');
   });
 
+  test('errors when name omitted in non-interactive mode', async () => {
+    spies = setupOutputSpies();
+    errorSpy = spyOn(console, 'error').mockImplementation(() => {});
+    exitSpy = mockExitThrow();
+    storeApiKey('re_default');
+
+    const program = await createProgram();
+    await expectExit1(() =>
+      program.parseAsync(['switch', '--json'], { from: 'user' }),
+    );
+
+    const output = JSON.parse(errorSpy?.mock.calls[0][0] as string);
+    expect(output.error.code).toBe('missing_name');
+  });
+
   test('errors when team does not exist', async () => {
     spies = setupOutputSpies();
     errorSpy = spyOn(console, 'error').mockImplementation(() => {});
