@@ -1,3 +1,4 @@
+import type { PickerConfig } from '../../lib/prompts';
 import { renderTable } from '../../lib/table';
 
 export function broadcastStatusIndicator(status: string): string {
@@ -12,6 +13,33 @@ export function broadcastStatusIndicator(status: string): string {
       return status;
   }
 }
+
+export const broadcastPickerConfig: PickerConfig<{
+  id: string;
+  name: string | null;
+}> = {
+  resource: 'broadcast',
+  resourcePlural: 'broadcasts',
+  fetchItems: (resend, { limit, after }) =>
+    resend.broadcasts.list({ limit, ...(after && { after }) }),
+  display: (b) => ({ label: b.name ?? '(untitled)', hint: b.id }),
+};
+
+export const sendBroadcastPickerConfig: PickerConfig<{
+  id: string;
+  name: string | null;
+  status: string;
+}> = {
+  resource: 'broadcast',
+  resourcePlural: 'broadcasts',
+  fetchItems: (resend, { limit, after }) =>
+    resend.broadcasts.list({ limit, ...(after && { after }) }),
+  display: (b) => ({
+    label: b.name ?? '(untitled)',
+    hint: `${broadcastStatusIndicator(b.status)}  ${b.id}`,
+  }),
+  filter: (b) => b.status === 'draft',
+};
 
 export function renderBroadcastsTable(
   broadcasts: Array<{

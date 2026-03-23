@@ -1,18 +1,15 @@
-import * as p from '@clack/prompts';
 import { Command } from '@commander-js/extra-typings';
 import type { AddContactSegmentOptions } from 'resend';
+import { runWrite } from '../../lib/actions';
 import type { GlobalOpts } from '../../lib/client';
-import { requireClient } from '../../lib/client';
 import { buildHelpText } from '../../lib/help-text';
-import { outputError, outputResult } from '../../lib/output';
-import { cancelAndExit } from '../../lib/prompts';
-import { withSpinner } from '../../lib/spinner';
-import { isInteractive } from '../../lib/tty';
-import { segmentContactIdentifier } from './utils';
+import { pickId } from '../../lib/prompts';
+import { segmentPickerConfig } from '../segments/utils';
+import { contactPickerConfig, segmentContactIdentifier } from './utils';
 
 export const addContactSegmentCommand = new Command('add-segment')
   .description('Add a contact to a segment')
-  .argument('<contactId>', 'Contact UUID or email address')
+  .argument('[contactId]', 'Contact UUID or email address')
   .option('--segment-id <id>', 'Segment ID to add the contact to (required)')
   .addHelpText(
     'after',
@@ -28,29 +25,18 @@ Non-interactive: --segment-id is required.`,
       ],
     }),
   )
-  .action(async (contactId, opts, cmd) => {
+  .action(async (contactIdArg, opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals() as GlobalOpts;
-    const resend = await requireClient(globalOpts);
-
-    let segmentId = opts.segmentId;
-
-    if (!segmentId) {
-      if (!isInteractive() || globalOpts.json) {
-        outputError(
-          { message: 'Missing --segment-id flag.', code: 'missing_segment_id' },
-          { json: globalOpts.json },
-        );
-      }
-      const result = await p.text({
-        message: 'Segment ID',
-        placeholder: '7b1e0a3d-4c5f-4e8a-9b2d-1a3c5e7f9b2d',
-        validate: (v) => (!v ? 'Required' : undefined),
-      });
-      if (p.isCancel(result)) {
-        cancelAndExit('Cancelled.');
-      }
-      segmentId = result;
-    }
+    const contactId = await pickId(
+      contactIdArg,
+      contactPickerConfig,
+      globalOpts,
+    );
+    const segmentId = await pickId(
+      opts.segmentId,
+      segmentPickerConfig,
+      globalOpts,
+    );
 
     // segmentContactIdentifier resolves UUID vs email for the ContactSegmentsBaseOptions
     // discriminated union. The spread of that union requires an explicit cast.
@@ -59,20 +45,17 @@ Non-interactive: --segment-id is required.`,
       segmentId,
     } as AddContactSegmentOptions;
 
-    const data = await withSpinner(
+    await runWrite(
       {
-        loading: 'Adding contact to segment...',
-        success: 'Contact added to segment',
-        fail: 'Failed to add contact to segment',
+        spinner: {
+          loading: 'Adding contact to segment...',
+          success: 'Contact added to segment',
+          fail: 'Failed to add contact to segment',
+        },
+        sdkCall: (resend) => resend.contacts.segments.add(payload),
+        errorCode: 'add_segment_error',
+        successMsg: `Contact added to segment: ${segmentId}`,
       },
-      () => resend.contacts.segments.add(payload),
-      'add_segment_error',
       globalOpts,
     );
-
-    if (!globalOpts.json && isInteractive()) {
-      console.log(`Contact added to segment: ${segmentId}`);
-    } else {
-      outputResult(data, { json: globalOpts.json });
-    }
   });

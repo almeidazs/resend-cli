@@ -8,27 +8,41 @@ import {
 } from 'vitest';
 import { expectExit1, mockExitThrow } from '../helpers';
 
-describe('promptForMissing', () => {
-  const originalStdinIsTTY = process.stdin.isTTY;
-  const originalStdoutIsTTY = process.stdout.isTTY;
-  let errorSpy: MockInstance | undefined;
-  let exitSpy: MockInstance | undefined;
+const originalStdinIsTTY = process.stdin.isTTY;
+const originalStdoutIsTTY = process.stdout.isTTY;
+let errorSpy: MockInstance | undefined;
+let exitSpy: MockInstance | undefined;
 
-  afterEach(() => {
-    errorSpy?.mockRestore();
-    exitSpy?.mockRestore();
-    errorSpy = undefined;
-    exitSpy = undefined;
-    Object.defineProperty(process.stdin, 'isTTY', {
-      value: originalStdinIsTTY,
-      writable: true,
-    });
-    Object.defineProperty(process.stdout, 'isTTY', {
-      value: originalStdoutIsTTY,
-      writable: true,
-    });
+function setTTY(value: boolean | undefined) {
+  Object.defineProperty(process.stdin, 'isTTY', { value, writable: true });
+  Object.defineProperty(process.stdout, 'isTTY', { value, writable: true });
+}
+
+function setupSpies() {
+  errorSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+  exitSpy = mockExitThrow();
+}
+
+function spyOutput(): string {
+  return errorSpy?.mock.calls.map((c) => c[0]).join(' ') ?? '';
+}
+
+afterEach(() => {
+  errorSpy?.mockRestore();
+  exitSpy?.mockRestore();
+  errorSpy = undefined;
+  exitSpy = undefined;
+  Object.defineProperty(process.stdin, 'isTTY', {
+    value: originalStdinIsTTY,
+    writable: true,
   });
+  Object.defineProperty(process.stdout, 'isTTY', {
+    value: originalStdoutIsTTY,
+    writable: true,
+  });
+});
 
+describe('promptForMissing', () => {
   test('returns options unchanged when nothing is missing', async () => {
     const { promptForMissing } = await import('../../src/lib/prompts');
     const opts = { from: 'a@b.com', to: 'c@d.com', subject: 'Hi' };
@@ -45,16 +59,8 @@ describe('promptForMissing', () => {
   });
 
   test('exits with missing_flags error in non-interactive mode', async () => {
-    Object.defineProperty(process.stdin, 'isTTY', {
-      value: undefined,
-      writable: true,
-    });
-    Object.defineProperty(process.stdout, 'isTTY', {
-      value: undefined,
-      writable: true,
-    });
-    errorSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    exitSpy = mockExitThrow();
+    setTTY(undefined);
+    setupSpies();
 
     const { promptForMissing } = await import('../../src/lib/prompts');
 
@@ -70,24 +76,15 @@ describe('promptForMissing', () => {
       ),
     );
 
-    const allErrors = errorSpy?.mock.calls.map((c) => c[0]).join(' ');
-    expect(allErrors).toContain('--from');
-    expect(allErrors).toContain('--subject');
+    expect(spyOutput()).toContain('--from');
+    expect(spyOutput()).toContain('--subject');
     // --to should NOT be listed since it has a value
-    expect(allErrors).not.toContain('--to,');
+    expect(spyOutput()).not.toContain('--to,');
   });
 
   test('errors output includes missing_flags code', async () => {
-    Object.defineProperty(process.stdin, 'isTTY', {
-      value: undefined,
-      writable: true,
-    });
-    Object.defineProperty(process.stdout, 'isTTY', {
-      value: undefined,
-      writable: true,
-    });
-    errorSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    exitSpy = mockExitThrow();
+    setTTY(undefined);
+    setupSpies();
 
     const { promptForMissing } = await import('../../src/lib/prompts');
 
@@ -99,21 +96,12 @@ describe('promptForMissing', () => {
       ),
     );
 
-    const allErrors = errorSpy?.mock.calls.map((c) => c[0]).join(' ');
-    expect(allErrors).toContain('missing_flags');
+    expect(spyOutput()).toContain('missing_flags');
   });
 
   test('exits with missing_flags error when --json is set even in TTY', async () => {
-    Object.defineProperty(process.stdin, 'isTTY', {
-      value: true,
-      writable: true,
-    });
-    Object.defineProperty(process.stdout, 'isTTY', {
-      value: true,
-      writable: true,
-    });
-    errorSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    exitSpy = mockExitThrow();
+    setTTY(true);
+    setupSpies();
 
     const { promptForMissing } = await import('../../src/lib/prompts');
 
@@ -125,8 +113,7 @@ describe('promptForMissing', () => {
       ),
     );
 
-    const allErrors = errorSpy?.mock.calls.map((c) => c[0]).join(' ');
-    expect(allErrors).toContain('missing_flags');
+    expect(spyOutput()).toContain('missing_flags');
   });
 
   test('skips fields marked as required=false', async () => {
@@ -144,38 +131,41 @@ describe('promptForMissing', () => {
   });
 });
 
-describe('confirmDelete', () => {
-  const originalStdinIsTTY = process.stdin.isTTY;
-  const originalStdoutIsTTY = process.stdout.isTTY;
-  let errorSpy: MockInstance | undefined;
-  let exitSpy: MockInstance | undefined;
-
-  afterEach(() => {
-    errorSpy?.mockRestore();
-    exitSpy?.mockRestore();
-    errorSpy = undefined;
-    exitSpy = undefined;
-    Object.defineProperty(process.stdin, 'isTTY', {
-      value: originalStdinIsTTY,
-      writable: true,
-    });
-    Object.defineProperty(process.stdout, 'isTTY', {
-      value: originalStdoutIsTTY,
-      writable: true,
-    });
+describe('pickId', () => {
+  test('returns id immediately when provided', async () => {
+    const { pickId } = await import('../../src/lib/prompts');
+    const result = await pickId('test-id', {} as never, {});
+    expect(result).toBe('test-id');
   });
 
+  test('exits with missing_id error in non-interactive mode', async () => {
+    setTTY(undefined);
+    setupSpies();
+
+    const { pickId } = await import('../../src/lib/prompts');
+
+    await expectExit1(() => pickId(undefined, {} as never, {}));
+
+    expect(spyOutput()).toContain('missing_id');
+  });
+
+  test('exits with missing_id error when --json is set even in TTY', async () => {
+    setTTY(true);
+    setupSpies();
+
+    const { pickId } = await import('../../src/lib/prompts');
+
+    await expectExit1(() => pickId(undefined, {} as never, { json: true }));
+
+    const parsed = JSON.parse(spyOutput());
+    expect(parsed.error.code).toBe('missing_id');
+  });
+});
+
+describe('confirmDelete', () => {
   test('exits with confirmation_required when non-interactive', async () => {
-    Object.defineProperty(process.stdin, 'isTTY', {
-      value: undefined,
-      writable: true,
-    });
-    Object.defineProperty(process.stdout, 'isTTY', {
-      value: undefined,
-      writable: true,
-    });
-    errorSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    exitSpy = mockExitThrow();
+    setTTY(undefined);
+    setupSpies();
 
     const { confirmDelete } = await import('../../src/lib/prompts');
 
@@ -183,51 +173,32 @@ describe('confirmDelete', () => {
       confirmDelete('res_123', 'Delete resource res_123?', { json: false }),
     );
 
-    const output = errorSpy?.mock.calls.map((c) => c[0]).join(' ');
-    expect(output).toContain('confirmation_required');
+    expect(spyOutput()).toContain('confirmation_required');
   });
 
   test('outputs JSON confirmation_required error when json option is true', async () => {
-    Object.defineProperty(process.stdin, 'isTTY', {
-      value: undefined,
-      writable: true,
-    });
-    Object.defineProperty(process.stdout, 'isTTY', {
-      value: undefined,
-      writable: true,
-    });
-    errorSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    exitSpy = mockExitThrow();
+    setTTY(undefined);
+    setupSpies();
 
     const { confirmDelete } = await import('../../src/lib/prompts');
     await expectExit1(() =>
       confirmDelete('res_123', 'Delete?', { json: true }),
     );
 
-    const raw = errorSpy?.mock.calls.map((c) => c[0]).join(' ');
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(spyOutput());
     expect(parsed.error.code).toBe('confirmation_required');
   });
 
   test('exits with confirmation_required when --json is set even in TTY', async () => {
-    Object.defineProperty(process.stdin, 'isTTY', {
-      value: true,
-      writable: true,
-    });
-    Object.defineProperty(process.stdout, 'isTTY', {
-      value: true,
-      writable: true,
-    });
-    errorSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    exitSpy = mockExitThrow();
+    setTTY(true);
+    setupSpies();
 
     const { confirmDelete } = await import('../../src/lib/prompts');
     await expectExit1(() =>
       confirmDelete('res_123', 'Delete?', { json: true }),
     );
 
-    const raw = errorSpy?.mock.calls.map((c) => c[0]).join(' ');
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(spyOutput());
     expect(parsed.error.code).toBe('confirmation_required');
   });
 });
